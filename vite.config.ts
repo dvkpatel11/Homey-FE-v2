@@ -148,7 +148,7 @@ export default defineConfig({
 
   // CSS optimization
   css: {
-    postcss: "./postcss.config.js",
+    postcss: "./postcss.config.ts",
     devSourcemap: true,
   },
 });

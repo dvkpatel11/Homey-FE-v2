@@ -1,21 +1,22 @@
-export default {
+import type { Config } from "postcss-load-config";
+
+const config: Config = {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
-    // Production optimizations
     ...(process.env.NODE_ENV === "production" && {
       cssnano: {
         preset: [
           "default",
           {
             discardComments: { removeAll: true },
-            normalizeWhitespace: false, // Keep readable for debugging
+            normalizeWhitespace: false,
             minifySelectors: true,
             minifyParams: true,
             minifyFontValues: true,
             colormin: true,
             convertValues: {
-              length: false, // Don't convert px to other units for consistency
+              length: false,
             },
           },
         ],
@@ -23,3 +24,5 @@ export default {
     }),
   },
 };
+
+export default config;

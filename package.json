@@ -21,8 +21,11 @@
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
+    "@types/node": "^24.2.1",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
@@ -66,6 +69,7 @@
     },
     "extends": [
       "eslint:recommended",
+      "@typescript-eslint/recommended",
       "plugin:react/recommended",
       "plugin:react/jsx-runtime",
       "plugin:react-hooks/recommended",
@@ -75,6 +79,7 @@
       "dist",
       ".eslintrc.cjs"
     ],
+    "parser": "@typescript-eslint/parser",
     "parserOptions": {
       "ecmaVersion": "latest",
       "sourceType": "module"
@@ -85,10 +90,12 @@
       }
     },
     "plugins": [
-      "react-refresh"
+      "react-refresh",
+      "@typescript-eslint"
     ],
     "rules": {
-      "no-unused-vars": "warn",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
       "no-console": "warn",
       "prefer-const": "error",
       "react-hooks/exhaustive-deps": "warn",
