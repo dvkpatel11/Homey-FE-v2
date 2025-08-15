@@ -79,19 +79,34 @@ const GlassModal: React.FC<GlassModalProps> = ({
               <div className="flex items-center justify-between p-6 border-b border-glass-border">
                 <div className="flex-1">
                   {title && (
-                    <GlassHeading level={3} className="pr-8">
+                    <GlassHeading level={3} className="pr-8 !text-white" style={{ color: "var(--homey-primary)" }}>
                       {title}
                     </GlassHeading>
                   )}
                 </div>
                 {showCloseButton && (
-                  <IconButton icon={X} variant="ghost" size="sm" onClick={onClose} className="flex-shrink-0" />
+                  <IconButton
+                    icon={X}
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                    className="flex-shrink-0 !text-white hover:!bg-white/10"
+                  />
                 )}
               </div>
             )}
 
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">{children}</div>
+            {/* Content with forced white text */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div
+                className="modal-content"
+                style={{
+                  color: "white",
+                }}
+              >
+                {children}
+              </div>
+            </div>
           </motion.div>
         </div>
       )}

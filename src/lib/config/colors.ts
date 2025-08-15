@@ -7,7 +7,9 @@ export interface ColorPalette {
   [key: string]: string;
 }
 
+// Fixed: Make GlassColors compatible with Tailwind's RecursiveKeyValuePair
 export interface GlassColors {
+  [key: string]: string;
   light: string;
   medium: string;
   strong: string;
@@ -41,42 +43,40 @@ export const VIOLET_PALETTE = {
     300: "#b79aff",
     400: "#9c6cff",
     500: "#8b5cf6", // Primary violet
-    600: "#7c3aed", // Dark violet
+    600: "#7c3aed", // Light mode primary
     700: "#6d28d9", // Deeper violet
     800: "#5b21b6", // Darkest violet
     900: "#4c1d95",
   },
 
-  // Bright variants for accents
+  // Bright variants for dark mode
   violetBright: {
-    400: "#a78bfa",
-    500: "#9f7aea",
-    600: "#8b5cf6",
+    400: "#a78bfa", // Dark mode primary
+    500: "#c4b5fd", // Dark mode bright
+    600: "#8b5cf6", // Dark mode dark
   },
 
-  // Glass-specific colors with opacity
+  // Glass-specific colors with opacity - FIXED for Tailwind compatibility
   glass: {
-    violet: {
-      light: "rgba(139, 92, 246, 0.1)",
-      medium: "rgba(139, 92, 246, 0.15)",
-      strong: "rgba(139, 92, 246, 0.25)",
-      border: "rgba(139, 92, 246, 0.2)",
-      glow: "rgba(139, 92, 246, 0.4)",
-    } as GlassColors,
+    light: "rgba(139, 92, 246, 0.1)",
+    medium: "rgba(139, 92, 246, 0.15)",
+    strong: "rgba(139, 92, 246, 0.25)",
+    border: "rgba(139, 92, 246, 0.2)",
+    glow: "rgba(139, 92, 246, 0.4)",
+  } as GlassColors,
 
-    // Glass backgrounds
-    background: {
-      dark: "rgba(0, 0, 0, 0.25)",
-      light: "rgba(255, 255, 255, 0.15)",
-      subtle: "rgba(255, 255, 255, 0.05)",
-    },
+  // Glass backgrounds
+  glassBackground: {
+    dark: "rgba(0, 0, 0, 0.25)",
+    light: "rgba(255, 255, 255, 0.15)",
+    subtle: "rgba(255, 255, 255, 0.05)",
+  },
 
-    // Glass borders
-    border: {
-      light: "rgba(255, 255, 255, 0.1)",
-      medium: "rgba(255, 255, 255, 0.15)",
-      strong: "rgba(255, 255, 255, 0.25)",
-    },
+  // Glass borders
+  glassBorder: {
+    light: "rgba(255, 255, 255, 0.1)",
+    medium: "rgba(255, 255, 255, 0.15)",
+    strong: "rgba(255, 255, 255, 0.25)",
   },
 
   // Status colors that complement violet
@@ -96,35 +96,35 @@ export const VIOLET_PALETTE = {
   },
 } as const;
 
-// Theme-specific color mappings
+// Theme-specific color mappings - UPDATED to match your CSS
 export const LIGHT_THEME_COLORS: ThemeColors = {
-  primary: VIOLET_PALETTE.violet[600],
-  primaryBright: VIOLET_PALETTE.violetBright[400],
-  primaryDark: VIOLET_PALETTE.violet[700],
+  primary: "#7c3aed",
+  primaryBright: "#8b5cf6",
+  primaryDark: "#6d28d9",
 
-  glassBackground: VIOLET_PALETTE.glass.background.light,
-  glassBorder: VIOLET_PALETTE.glass.border.medium,
-  glassViolet: VIOLET_PALETTE.glass.violet.light,
+  glassBackground: "rgba(255, 255, 255, 0.15)",
+  glassBorder: "rgba(255, 255, 255, 0.2)",
+  glassViolet: "rgba(139, 92, 246, 0.1)",
 
-  background: VIOLET_PALETTE.background.beige,
-  text: "#0f172a",
-  textSecondary: "#475569",
-  textMuted: "#64748b",
+  text: "#1e293b",
+  textSecondary: "#334155",
+  textMuted: "#475569",
+  background: "#f5f5dc",
 };
 
 export const DARK_THEME_COLORS: ThemeColors = {
-  primary: VIOLET_PALETTE.violet[500],
-  primaryBright: VIOLET_PALETTE.violetBright[400],
-  primaryDark: VIOLET_PALETTE.violet[700],
+  primary: "#a78bfa", // Brighter for dark mode
+  primaryBright: "#c4b5fd", // Even brighter
+  primaryDark: "#8b5cf6", // Medium purple
 
-  glassBackground: VIOLET_PALETTE.glass.background.dark,
-  glassBorder: VIOLET_PALETTE.glass.border.light,
-  glassViolet: VIOLET_PALETTE.glass.violet.medium,
+  glassBackground: "rgba(0, 0, 0, 0.25)",
+  glassBorder: "rgba(255, 255, 255, 0.1)",
+  glassViolet: "rgba(139, 92, 246, 0.15)",
 
-  background: VIOLET_PALETTE.background.black,
-  text: "#f8fafc",
-  textSecondary: "rgba(248, 250, 252, 0.8)",
-  textMuted: "rgba(248, 250, 252, 0.6)",
+  text: "#ffffff",
+  textSecondary: "rgba(255, 255, 255, 0.9)",
+  textMuted: "rgba(255, 255, 255, 0.7)",
+  background: "#0a0a0a",
 };
 
 // CSS Custom Property generators
@@ -143,10 +143,13 @@ export const generateCSSVars = (theme: ThemeColors): CSSVariables => {
   };
 };
 
-// Tailwind color object
+// Tailwind color object - FIXED for compatibility
 export const TAILWIND_COLORS = {
   "homey-violet": VIOLET_PALETTE.violet,
   "homey-violet-bright": VIOLET_PALETTE.violetBright,
-  "homey-glass": VIOLET_PALETTE.glass.violet,
+  "homey-glass": VIOLET_PALETTE.glass,
+  "homey-glass-bg": VIOLET_PALETTE.glassBackground,
+  "homey-glass-border": VIOLET_PALETTE.glassBorder,
   "homey-status": VIOLET_PALETTE.status,
+  "homey-background": VIOLET_PALETTE.background,
 } as const;

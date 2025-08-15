@@ -9,7 +9,7 @@ export interface BaseProps {
 }
 
 // Button variant types
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success" | "warning";
 export type ButtonSize = "sm" | "md" | "lg" | "xl";
 
 // Glass component variants

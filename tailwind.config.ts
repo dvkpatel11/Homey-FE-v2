@@ -1,7 +1,7 @@
+import type { Config } from "tailwindcss";
 import { TAILWIND_COLORS } from "./src/lib/config/colors";
 
-/** @type {import('tailwindcss').Config} */
-module.exports = {
+const config: Config = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   darkMode: "class",
   theme: {
@@ -23,26 +23,26 @@ module.exports = {
           dark: "var(--homey-primary-dark)",
         },
 
-        // Glass system
+        // Glass system - now using CSS variables
         glass: {
           DEFAULT: "var(--homey-glass-bg)",
           border: "var(--homey-glass-border)",
           violet: "var(--homey-glass-violet)",
-          subtle: "rgba(255,255,255,0.05)",
-          strong: "rgba(255,255,255,0.15)",
+          subtle: "var(--homey-glass-bg)",
+          strong: "var(--homey-glass-bg)",
         },
 
-        // Text system
         text: {
           DEFAULT: "var(--homey-text)",
           secondary: "var(--homey-text-secondary)",
           muted: "var(--homey-text-muted)",
         },
 
+        // Dynamic surface colors based on theme
         surface: {
-          1: "rgba(255,255,255,0.05)",
-          2: "rgba(255,255,255,0.08)",
-          3: "rgba(255,255,255,0.12)",
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
           violet: "var(--homey-glass-violet)",
         },
       },
@@ -71,11 +71,11 @@ module.exports = {
       boxShadow: {
         glass: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--homey-glass-border)",
         "glass-lg": "0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--homey-glass-border)",
-        "glass-violet": "0 8px 32px rgba(139, 92, 246, 0.15), 0 0 0 1px var(--homey-glass-violet)",
-        "glass-hover": "0 20px 40px rgba(0, 0, 0, 0.25), 0 0 60px rgba(139, 92, 246, 0.2)",
+        "glass-violet": "0 8px 32px var(--homey-glass-violet), 0 0 0 1px var(--homey-glass-violet)",
+        "glass-hover": "0 20px 40px rgba(0, 0, 0, 0.25), 0 0 60px var(--homey-glass-violet)",
 
-        "glass-inset": "inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.05)",
-        "glass-inset-lg": "inset 0 2px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(255, 255, 255, 0.08)",
+        "glass-inset": "inset 0 1px 0 var(--surface-1), inset 0 -1px 0 var(--surface-1)",
+        "glass-inset-lg": "inset 0 2px 0 var(--surface-2), inset 0 -2px 0 var(--surface-1)",
 
         mobile: "0 4px 16px rgba(0, 0, 0, 0.15)",
         "3xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -108,8 +108,8 @@ module.exports = {
           "50%": { backgroundPosition: "200% 0" },
         },
         violetGlow: {
-          "0%": { boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" },
-          "100%": { boxShadow: "0 0 40px rgba(139, 92, 246, 0.8)" },
+          "0%": { boxShadow: "0 0 20px var(--homey-glass-violet)" },
+          "100%": { boxShadow: "0 0 40px var(--homey-glass-violet)" },
         },
         float: {
           "0%, 100%": { transform: "translateY(0px)" },
@@ -132,7 +132,7 @@ module.exports = {
     require("@tailwindcss/typography"),
     require("@tailwindcss/aspect-ratio"),
 
-    function ({ addUtilities, theme }) {
+    function ({ addUtilities, theme }: { addUtilities: any; theme: any }) {
       const newUtilities = {
         // Mobile optimizations
         ".touch-manipulation": {
@@ -153,7 +153,7 @@ module.exports = {
           "padding-right": "env(safe-area-inset-right)",
         },
 
-        // Glass utilities
+        // Glass utilities - NOW FULLY DYNAMIC
         ".glass-card": {
           background: "var(--homey-glass-bg)",
           "backdrop-filter": "blur(16px)",
@@ -170,7 +170,7 @@ module.exports = {
             transform: "scale(1.02) translateY(-4px) translateZ(0)",
             "box-shadow": theme("boxShadow.glass-hover"),
             "border-color": "var(--homey-glass-violet)",
-            filter: "drop-shadow(0 0 20px rgba(255,255,255,0.1))",
+            filter: "drop-shadow(0 0 20px var(--surface-2))",
           },
         },
 
@@ -178,18 +178,19 @@ module.exports = {
           background: "var(--homey-glass-violet)",
           "backdrop-filter": "blur(12px)",
           "-webkit-backdrop-filter": "blur(12px)",
-          border: "1px solid rgba(139, 92, 246, 0.3)",
+          border: "1px solid var(--homey-glass-violet)",
           transition: "all 0.3s ease",
           "&:hover": {
-            background: "rgba(139, 92, 246, 0.25)",
-            "border-color": "rgba(139, 92, 246, 0.5)",
+            background: "var(--homey-primary)",
+            "border-color": "var(--homey-primary)",
             transform: "translateY(-2px) scale(1.05)",
-            "box-shadow": "0 10px 25px rgba(139, 92, 246, 0.3)",
+            "box-shadow": "0 10px 25px var(--homey-glass-violet)",
           },
         },
 
+        // DYNAMIC glass input - changes based on theme
         ".glass-input": {
-          background: "rgba(0, 0, 0, 0.1)",
+          background: "var(--glass-input-bg)",
           "backdrop-filter": "blur(12px)",
           "-webkit-backdrop-filter": "blur(12px)",
           border: "1px solid var(--homey-glass-border)",
@@ -197,31 +198,35 @@ module.exports = {
           "&:focus": {
             outline: "none",
             "border-color": "var(--homey-primary)",
-            "box-shadow": "0 0 0 3px rgba(139, 92, 246, 0.1), 0 8px 25px rgba(139, 92, 246, 0.2)",
+            "box-shadow": "0 0 0 3px var(--homey-glass-violet), 0 8px 25px var(--homey-glass-violet)",
+          },
+          "&::placeholder": {
+            color: "var(--homey-text-muted)",
           },
         },
 
         // Text utilities
         ".text-glass": {
           color: "var(--homey-text)",
-          "text-shadow": "0 1px 2px rgba(0, 0, 0, 0.3)",
+          "text-shadow": "var(--text-shadow)",
         },
 
         ".text-glass-secondary": {
           color: "var(--homey-text-secondary)",
-          "text-shadow": "0 1px 2px rgba(0, 0, 0, 0.2)",
+          "text-shadow": "var(--text-shadow-light)",
         },
 
         ".text-glass-muted": {
           color: "var(--homey-text-muted)",
         },
 
+        // Dynamic checkered pattern
         ".checkered-violet": {
           "background-image": `
-            linear-gradient(45deg, rgba(139, 92, 246, 0.05) 25%, transparent 25%),
-            linear-gradient(-45deg, rgba(139, 92, 246, 0.05) 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, rgba(139, 92, 246, 0.05) 75%),
-            linear-gradient(-45deg, transparent 75%, rgba(139, 92, 246, 0.05) 75%)
+            linear-gradient(45deg, var(--homey-glass-violet) 25%, transparent 25%),
+            linear-gradient(-45deg, var(--homey-glass-violet) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, var(--homey-glass-violet) 75%),
+            linear-gradient(-45deg, transparent 75%, var(--homey-glass-violet) 75%)
           `,
           "background-size": "20px 20px",
           "background-position": "0 0, 0 10px, 10px -10px, -10px 0px",
@@ -231,3 +236,5 @@ module.exports = {
     },
   ],
 };
+
+export default config;

@@ -1,16 +1,29 @@
-// Core form hook - minimal functionality
+// src/lib/hooks/form/useBasicForm.ts
 import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  FieldProps,
+  FieldState,
+  FormErrors,
+  FormSubmissionResult,
+  FormTouched,
+  FormValues,
+  UseBasicFormOptions,
+  UseBasicFormReturn,
+} from "./types";
 
-export const useBasicForm = (initialValues = {}, options = {}) => {
+export function useBasicForm<T extends FormValues = FormValues>(
+  initialValues: T,
+  options: UseBasicFormOptions<T> = {}
+): UseBasicFormReturn<T> {
   const { onSubmit, resetOnSubmit = false } = options;
 
-  const [values, setValues] = useState(initialValues);
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
+  const [values, setValues] = useState<T>(initialValues);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<FormTouched>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  const initialValuesRef = useRef(initialValues);
+  const initialValuesRef = useRef<T>(initialValues);
 
   // Check if form is dirty
   useEffect(() => {
@@ -20,14 +33,14 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
 
   // Set field value
   const setValue = useCallback(
-    (name, value) => {
+    <K extends keyof T>(name: K, value: T[K]) => {
       setValues((prev) => ({ ...prev, [name]: value }));
 
       // Clear field error when user starts typing
-      if (errors[name]) {
+      if (errors[name as string]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
-          delete newErrors[name];
+          delete newErrors[name as string];
           return newErrors;
         });
       }
@@ -35,44 +48,48 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
     [errors]
   );
 
-  // Set multiple values - renamed to avoid conflict
-  const updateValues = useCallback((newValues) => {
+  // Set multiple values
+  const updateValues = useCallback((newValues: Partial<T>) => {
     setValues((prev) => ({ ...prev, ...newValues }));
   }, []);
 
   // Handle input change
   const handleChange = useCallback(
-    (event) => {
-      const { name, value, type, checked } = event.target;
-      const fieldValue = type === "checkbox" ? checked : value;
-      setValue(name, fieldValue);
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const { name, value, type } = event.target;
+      const target = event.target as HTMLInputElement;
+      const fieldValue = type === "checkbox" ? target.checked : value;
+      setValue(name as keyof T, fieldValue as T[keyof T]);
     },
     [setValue]
   );
 
   // Handle input blur
-  const handleBlur = useCallback((event) => {
-    const { name } = event.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
-  }, []);
+  const handleBlur = useCallback(
+    (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const { name } = event.target;
+      setTouched((prev) => ({ ...prev, [name]: true }));
+    },
+    []
+  );
 
   // Set field error
-  const setFieldError = useCallback((name, error) => {
-    setErrors((prev) => ({ ...prev, [name]: error }));
+  const setFieldError = useCallback((name: keyof T, error: string) => {
+    setErrors((prev) => ({ ...prev, [name as string]: error }));
   }, []);
 
   // Clear field error
-  const clearFieldError = useCallback((name) => {
+  const clearFieldError = useCallback((name: keyof T) => {
     setErrors((prev) => {
       const newErrors = { ...prev };
-      delete newErrors[name];
+      delete newErrors[name as string];
       return newErrors;
     });
   }, []);
 
   // Handle form submission
   const handleSubmit = useCallback(
-    async (event) => {
+    async (event?: React.FormEvent): Promise<FormSubmissionResult> => {
       if (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -81,7 +98,8 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
       setIsSubmitting(true);
 
       try {
-        let result = { success: true, data: values };
+        let result: FormSubmissionResult = { success: true, data: values };
+
         if (onSubmit) {
           result = await onSubmit(values);
         }
@@ -92,8 +110,9 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
 
         return result;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Form submission failed";
         console.error("Form submission error:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: errorMessage };
       } finally {
         setIsSubmitting(false);
       }
@@ -103,7 +122,7 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
 
   // Reset form
   const reset = useCallback(
-    (newValues = initialValues) => {
+    (newValues: T = initialValues) => {
       setValues(newValues);
       setErrors({});
       setTouched({});
@@ -114,9 +133,9 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
 
   // Get field props for easy binding
   const getFieldProps = useCallback(
-    (name) => ({
-      name,
-      value: values[name] || "",
+    (name: keyof T): FieldProps => ({
+      name: name as string,
+      value: values[name] ?? "",
       onChange: handleChange,
       onBlur: handleBlur,
     }),
@@ -125,12 +144,12 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
 
   // Get field state
   const getFieldState = useCallback(
-    (name) => ({
+    (name: keyof T): FieldState => ({
       value: values[name],
-      error: errors[name],
-      touched: touched[name],
-      hasError: Boolean(errors[name]),
-      isTouched: Boolean(touched[name]),
+      error: errors[name as string],
+      touched: touched[name as string],
+      hasError: Boolean(errors[name as string]),
+      isTouched: Boolean(touched[name as string]),
     }),
     [values, errors, touched]
   );
@@ -145,7 +164,7 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
     isDirty,
     isValid,
     setValue,
-    updateValues, // renamed from setValues
+    updateValues,
     setFieldError,
     clearFieldError,
     handleChange,
@@ -155,4 +174,4 @@ export const useBasicForm = (initialValues = {}, options = {}) => {
     getFieldProps,
     getFieldState,
   };
-};
+}

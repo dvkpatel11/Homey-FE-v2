@@ -2,61 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced CSS Variables with Proper Light/Dark Inversion */
-:root {
-  /* Light Theme - Violet color system */
-  --homey-primary: #7c3aed;
-  --homey-primary-bright: #8b5cf6;
-  --homey-primary-dark: #6d28d9;
-
-  /* Light Theme - Glass morphism */
-  --homey-glass-bg: rgba(255, 255, 255, 0.15);
-  --homey-glass-border: rgba(255, 255, 255, 0.2);
-  --homey-glass-violet: rgba(139, 92, 246, 0.1);
-  --glass-blur: 16px;
-
-  /* Light Theme - Background */
-  --homey-bg: #f5f5dc; /* Beige for light mode */
-
-  /* Light Theme - Text colors */
-  --homey-text: #0f172a;
-  --homey-text-secondary: #475569;
-  --homey-text-muted: #64748b;
-
-  /* Semantic colors */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
-  --color-cancel: #6b7280;
+/* Enhanced CSS Variables - Values injected from colors.ts */
+.modal-content * {
+  color: white !important;
 }
 
-/* Dark theme with proper inversion */
+.modal-content input {
+  color: white !important;
+}
+
+.modal-content input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.modal-content textarea {
+  color: white !important;
+}
+
+.modal-content textarea::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.text-glass {
+  color: var(--homey-text);
+}
+
+.text-glass-secondary {
+  color: var(--homey-text-secondary);
+}
+
+.text-glass-muted {
+  color: var(--homey-text-muted);
+}
+
+:root {
+  /* CSS Variables - populated dynamically from colors.ts */
+  /* Light Theme values will be injected here */
+  --glass-blur: 16px;
+}
+
+/* Dark theme - values injected from colors.ts */
 .dark {
-  /* Dark Theme - Inverted violet system */
-  --homey-primary: #a78bfa; /* Brighter purple for dark mode */
-  --homey-primary-bright: #c4b5fd; /* Even brighter for dark */
-  --homey-primary-dark: #8b5cf6; /* Medium purple for dark */
-
-  /* Dark Theme - Glass morphism */
-  --homey-glass-bg: rgba(0, 0, 0, 0.25);
-  --homey-glass-border: rgba(255, 255, 255, 0.1);
-  --homey-glass-violet: rgba(139, 92, 246, 0.15);
-
-  /* Dark Theme - Background */
-  --homey-bg: #0a0a0a; /* Material black for dark mode */
-
-  /* Dark Theme - Inverted text colors */
-  --homey-text: #f8fafc;
-  --homey-text-secondary: rgba(248, 250, 252, 0.8);
-  --homey-text-muted: rgba(248, 250, 252, 0.6);
-
-  /* Dark theme semantic colors - slightly adjusted */
-  --color-success: #34d399;
-  --color-warning: #fbbf24;
-  --color-error: #f87171;
-  --color-info: #60a5fa;
-  --color-cancel: #9ca3af;
+  /* Dark Theme values will be injected here */
 }
 
 /* Base styles for mobile-first */
@@ -104,7 +91,7 @@
 
   /* Focus styles for accessibility */
   :focus-visible {
-    @apply outline-none ring-2 ring-homey-violet-500 ring-offset-2 ring-offset-transparent;
+    @apply outline-none ring-2 ring-violet-500 ring-offset-2 ring-offset-transparent;
   }
 }
 
@@ -113,22 +100,22 @@
   /* Glass card variants */
   .glass-card-subtle {
     @apply glass-card;
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: var(--surface-1);
+    border-color: var(--homey-glass-border);
   }
 
   .glass-card-strong {
     @apply glass-card;
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--surface-3);
+    border-color: var(--homey-glass-border);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   }
 
   .glass-card-violet {
     @apply glass-card;
     background: var(--homey-glass-violet);
-    border-color: rgba(139, 92, 246, 0.2);
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+    border-color: var(--homey-glass-violet);
+    box-shadow: 0 8px 32px var(--homey-glass-violet);
   }
 
   /* Enhanced semantic button styles */
@@ -136,56 +123,81 @@
     background: var(--homey-primary);
     color: white;
     border: 1px solid var(--homey-primary);
-    &:hover {
-      background: var(--homey-primary-bright);
-      border-color: var(--homey-primary-bright);
-      transform: translateY(-1px);
-      box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
-    }
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover {
+    background: var(--homey-primary-bright);
+    border-color: var(--homey-primary-bright);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px var(--homey-glass-violet);
   }
 
   .btn-success {
     background: var(--color-success);
     color: white;
     border: 1px solid var(--color-success);
-    &:hover {
-      background: #059669;
-      border-color: #059669;
-      transform: translateY(-1px);
-      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
-    }
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+  }
+
+  .btn-success:hover {
+    background: #059669;
+    border-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
   }
 
   .btn-danger {
     background: var(--color-error);
     color: white;
     border: 1px solid var(--color-error);
-    &:hover {
-      background: #dc2626;
-      border-color: #dc2626;
-      transform: translateY(-1px);
-      box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
-    }
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
   }
 
   .btn-cancel {
-    background: rgba(107, 114, 128, 0.1);
+    background: var(--surface-1);
     color: var(--color-cancel);
-    border: 1px solid rgba(107, 114, 128, 0.3);
-    &:hover {
-      background: rgba(107, 114, 128, 0.2);
-      border-color: rgba(107, 114, 128, 0.5);
-    }
+    border: 1px solid var(--surface-2);
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+  }
+
+  .btn-cancel:hover {
+    background: var(--surface-2);
+    border-color: var(--surface-3);
   }
 
   .btn-secondary {
     background: var(--homey-glass-bg);
     color: var(--homey-text);
     border: 1px solid var(--homey-glass-border);
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--homey-primary);
-    }
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+  }
+
+  .btn-secondary:hover {
+    background: var(--surface-1);
+    border-color: var(--homey-primary);
   }
 }
 
@@ -214,8 +226,6 @@
 @media (prefers-contrast: high) {
   :root {
     --homey-glass-border: rgba(255, 255, 255, 0.4);
-    --homey-text: #ffffff;
-    --homey-text-secondary: rgba(255, 255, 255, 0.9);
   }
 }
 
