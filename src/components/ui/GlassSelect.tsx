@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { ChevronDown, X } from "lucide-react";
 import { forwardRef } from "react";
+import type { GlassSelectProps } from "./types";
 
-const GlassSelect = forwardRef(
+const GlassSelect = forwardRef<HTMLSelectElement, GlassSelectProps>(
   (
     {
       label,

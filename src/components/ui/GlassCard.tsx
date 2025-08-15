@@ -1,22 +1,24 @@
-import { useTheme } from "../../contexts/ThemeContext.jsx";
+import { forwardRef } from "react";
+import type { GlassCardProps } from "./types";
 
-const GlassCard = ({ children, className = "", hover = true, variant = "default", ...props }) => {
-  const { isDark, reducedMotion } = useTheme();
+const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
+  ({ children, className = "", hover = true, variant = "default", ...props }, ref) => {
+    const variants = {
+      default: "glass-card",
+      subtle: "glass-card-subtle",
+      strong: "glass-card-strong",
+      violet: "glass-card-violet",
+    };
 
-  const variants = {
-    default: "glass-card",
-    subtle: "glass-card-subtle",
-    strong: "glass-card-strong",
-    violet: "glass-card-violet",
-  };
+    const hoverClass = hover ? "glass-card-hover" : "";
 
-  const hoverClass = hover && !reducedMotion ? "glass-card-hover" : "";
+    return (
+      <div ref={ref} className={`${variants[variant]} ${hoverClass} ${className}`} {...props}>
+        {children}
+      </div>
+    );
+  }
+);
 
-  return (
-    <div className={`${variants[variant]} ${hoverClass} ${className}`} {...props}>
-      {children}
-    </div>
-  );
-};
-
+GlassCard.displayName = "GlassCard";
 export default GlassCard;

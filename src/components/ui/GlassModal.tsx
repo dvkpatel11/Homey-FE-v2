@@ -2,10 +2,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import GlassHeading from "./GlassHeading.jsx";
-import IconButton from "./IconButton.jsx";
+import GlassHeading from "./GlassHeading";
+import IconButton from "./IconButton";
+import type { GlassModalProps } from "./types";
 
-const GlassModal = ({
+const GlassModal: React.FC<GlassModalProps> = ({
   isOpen,
   onClose,
   title,
@@ -17,7 +18,7 @@ const GlassModal = ({
 }) => {
   // Handle escape key
   useEffect(() => {
-    const handleEscape = (e) => {
+    const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
         onClose();
       }

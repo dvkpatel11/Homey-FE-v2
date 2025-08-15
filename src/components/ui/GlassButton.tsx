@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { forwardRef } from "react";
+import type { GlassButtonProps } from "./types";
 
-const GlassButton = forwardRef(
+const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
   (
     {
       children,
@@ -52,7 +53,7 @@ const GlassButton = forwardRef(
 
         <div className={`flex items-center space-x-2 ${loading ? "opacity-0" : ""}`}>
           {Icon && <Icon className="w-4 h-4" />}
-          <span>{children}</span>
+          <motion.span>{children}</motion.span>
           {RightIcon && <RightIcon className="w-4 h-4" />}
         </div>
       </motion.button>
@@ -60,4 +61,5 @@ const GlassButton = forwardRef(
   }
 );
 
+GlassButton.displayName = "GlassButton";
 export default GlassButton;

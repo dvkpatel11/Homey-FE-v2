@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Calendar, Check, Clock, Eye, EyeOff, Hash, Mail, Phone, Search, X } from "lucide-react";
 import { forwardRef, useState } from "react";
+import type { GlassInputProps } from "./types";
 
-const GlassInput = forwardRef(
+const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
   (
     {
       type = "text",
@@ -29,14 +30,22 @@ const GlassInput = forwardRef(
     const getInputIcon = () => {
       if (Icon) return Icon;
       switch (type) {
-        case "email": return Mail;
-        case "password": return Eye;
-        case "search": return Search;
-        case "tel": return Phone;
-        case "number": return Hash;
-        case "date": return Calendar;
-        case "time": return Clock;
-        default: return null;
+        case "email":
+          return Mail;
+        case "password":
+          return Eye;
+        case "search":
+          return Search;
+        case "tel":
+          return Phone;
+        case "number":
+          return Hash;
+        case "date":
+          return Calendar;
+        case "time":
+          return Clock;
+        default:
+          return null;
       }
     };
 
@@ -94,7 +103,7 @@ const GlassInput = forwardRef(
                   <Eye className="w-4 h-4 text-glass-muted" />
                 )
               ) : (
-                <RightIcon className="w-4 h-4 text-glass-muted" />
+                RightIcon && <RightIcon className="w-4 h-4 text-glass-muted" />
               )}
             </button>
           )}

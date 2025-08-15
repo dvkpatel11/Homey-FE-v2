@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { forwardRef } from "react";
+import type { GlassTextareaProps } from "./types";
 
-const GlassTextarea = forwardRef(
+const GlassTextarea = forwardRef<HTMLTextAreaElement, GlassTextareaProps>(
   (
     {
       label,

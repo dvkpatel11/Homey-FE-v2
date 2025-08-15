@@ -1,4 +1,4 @@
-const { TAILWIND_COLORS } = require("./src/lib/config/colors.ts");
+import { TAILWIND_COLORS } from "./src/lib/config/colors";
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -15,10 +15,8 @@ module.exports = {
     },
     extend: {
       colors: {
-        // Import our violet palette
         ...TAILWIND_COLORS,
 
-        // Runtime theming via CSS variables
         primary: {
           DEFAULT: "var(--homey-primary)",
           bright: "var(--homey-primary-bright)",
@@ -41,7 +39,6 @@ module.exports = {
           muted: "var(--homey-text-muted)",
         },
 
-        // Surface layers
         surface: {
           1: "rgba(255,255,255,0.05)",
           2: "rgba(255,255,255,0.08)",
@@ -72,17 +69,14 @@ module.exports = {
       },
 
       boxShadow: {
-        // Glass shadows
         glass: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--homey-glass-border)",
         "glass-lg": "0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--homey-glass-border)",
         "glass-violet": "0 8px 32px rgba(139, 92, 246, 0.15), 0 0 0 1px var(--homey-glass-violet)",
         "glass-hover": "0 20px 40px rgba(0, 0, 0, 0.25), 0 0 60px rgba(139, 92, 246, 0.2)",
 
-        // Inset shadows
         "glass-inset": "inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.05)",
         "glass-inset-lg": "inset 0 2px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(255, 255, 255, 0.08)",
 
-        // Mobile optimized
         mobile: "0 4px 16px rgba(0, 0, 0, 0.15)",
         "3xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
       },
@@ -138,7 +132,6 @@ module.exports = {
     require("@tailwindcss/typography"),
     require("@tailwindcss/aspect-ratio"),
 
-    // Enhanced glassmorphism utilities
     function ({ addUtilities, theme }) {
       const newUtilities = {
         // Mobile optimizations
@@ -223,7 +216,6 @@ module.exports = {
           color: "var(--homey-text-muted)",
         },
 
-        // Checkered background pattern
         ".checkered-violet": {
           "background-image": `
             linear-gradient(45deg, rgba(139, 92, 246, 0.05) 25%, transparent 25%),
