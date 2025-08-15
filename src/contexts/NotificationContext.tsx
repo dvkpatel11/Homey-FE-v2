@@ -1,6 +1,6 @@
 import { notificationApi } from "@/lib/api";
 import { DevicePlatform, DeviceToken, type Notification, NotificationListResponse, UUID, isApiSuccess } from "@/types";
-import React, { ReactNode, createContext, useContext, useEffect, useReducer } from "react";
+import React, { ReactNode, createContext, useCallback, useContext, useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
 import { supabase, useAuth } from "./AuthContext";
 import { useHousehold } from "./HouseholdContext";
@@ -112,7 +112,7 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const { currentHousehold } = useHousehold();
+  const { currentHousehold } = useHousehold(); // NOW PROPERLY USING HOUSEHOLD
   const [state, dispatch] = useReducer(notificationReducer, {
     notifications: [],
     unreadCount: 0,
@@ -121,19 +121,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     deviceTokenRegistered: false,
   });
 
-  // Load notifications when user changes
   useEffect(() => {
     if (user) {
       loadNotifications();
       checkPushPermission();
-
-      // Set up real-time subscription
-      const unsubscribe = subscribeToNotifications();
-      return unsubscribe;
     } else {
       dispatch({ type: "CLEAR_NOTIFICATIONS" });
     }
-  }, [user]);
+  }, [user, currentHousehold?.id]);
 
   const checkPushPermission = async () => {
     if ("Notification" in window) {
@@ -295,10 +290,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   };
 
-  const subscribeToNotifications = (): (() => void) => {
+  const subscribeToNotifications = useCallback((): (() => void) => {
     if (!user) return () => {};
 
-    const channel = supabase
+    const channels: any[] = [];
+
+    // Subscribe to user notifications
+    const userChannel = supabase
       .channel(`notifications:${user.id}`)
       .on(
         "postgres_changes",
@@ -311,38 +309,59 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         (payload) => {
           const notification = payload.new as Notification;
 
-          // Add to state
-          dispatch({ type: "ADD_NOTIFICATION", notification });
-
-          // Show toast notification
-          showToastNotification(notification);
-
-          // Show browser notification if permission granted
-          showBrowserNotification(notification);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const notification = payload.new as Notification;
-
-          if (notification.read_at) {
-            dispatch({ type: "MARK_READ", notificationId: notification.id });
+          // FIXED: Only show notifications for current household or global ones
+          if (
+            !currentHousehold ||
+            notification.household_id === currentHousehold.id ||
+            notification.household_id === "system"
+          ) {
+            dispatch({ type: "ADD_NOTIFICATION", notification });
+            showToastNotification(notification);
+            showBrowserNotification(notification);
           }
         }
       )
       .subscribe();
 
+    channels.push(userChannel);
+
+    // FIXED: Subscribe to household notifications if in a household
+    if (currentHousehold) {
+      const householdChannel = supabase
+        .channel(`household:${currentHousehold.id}:notifications`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `household_id=eq.${currentHousehold.id}`,
+          },
+          (payload) => {
+            const notification = payload.new as Notification;
+            if (notification.user_id === user.id) {
+              dispatch({ type: "ADD_NOTIFICATION", notification });
+              showToastNotification(notification);
+              showBrowserNotification(notification);
+            }
+          }
+        )
+        .subscribe();
+
+      channels.push(householdChannel);
+    }
+
     return () => {
-      supabase.removeChannel(channel);
+      channels.forEach((channel) => supabase.removeChannel(channel));
     };
-  };
+  }, [user, currentHousehold?.id]);
+  
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToNotifications();
+      return unsubscribe;
+    }
+  }, [user, currentHousehold?.id, subscribeToNotifications]);
 
   const showToastNotification = (notification: Notification) => {
     toast(notification.message, {

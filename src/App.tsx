@@ -8,6 +8,11 @@ import { DARK_THEME_COLORS, generateCSSVars, LIGHT_THEME_COLORS } from "./lib/co
 import TasksPage from "./components/EntityPage";
 import FloatingElements from "./components/layout/FloatingElements";
 import { default as Dashboard } from "./components/UiPrev";
+import { AuthProvider } from "./contexts/AuthContext";
+import { HouseholdProvider } from "./contexts/HouseholdContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import { RealtimeProvider } from "./contexts/RealtimeContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
 // Create QueryClient instance
@@ -131,56 +136,67 @@ const App: React.FC = () => {
         {/* Floating background elements */}
         <FloatingElements />
         <QueryClientProvider client={queryClient}>
-          {/* <AppLoader />
-          <PageLoader /> */}
-          <TasksPage isDark={isDark} />
-          <Dashboard isDark={isDark} toggleTheme={toggleTheme} />
-          {/* Enhanced Toast Notifications with preserved styling */}
-          <Toaster
-            position="top-center"
-            containerClassName="safe-area-top"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: "var(--homey-glass-bg)",
-                backdropFilter: "blur(16px)",
-                border: "1px solid var(--homey-glass-border)",
-                color: "var(--homey-text)",
-                borderRadius: "1rem",
-                padding: "12px 16px",
-                fontSize: "14px",
-                fontWeight: "500",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.25)",
-                maxWidth: "calc(100vw - 32px)",
-              },
-              success: {
-                style: {
-                  borderColor: "rgba(16, 185, 129, 0.3)",
-                  background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), var(--homey-glass-bg))",
-                },
-                iconTheme: {
-                  primary: "#10b981",
-                  secondary: "#fff",
-                },
-              },
-              error: {
-                style: {
-                  borderColor: "rgba(239, 68, 68, 0.3)",
-                  background: "linear-gradient(135deg, rgba(239, 68, 68, 0.1), var(--homey-glass-bg))",
-                },
-                iconTheme: {
-                  primary: "#ef4444",
-                  secondary: "#fff",
-                },
-              },
-              loading: {
-                style: {
-                  borderColor: "var(--homey-glass-violet)",
-                  background: "linear-gradient(135deg, var(--homey-glass-violet), var(--homey-glass-bg))",
-                },
-              },
-            }}
-          />
+          <ThemeProvider defaultTheme="system">
+            <AuthProvider>
+              <HouseholdProvider>
+                <RealtimeProvider>
+                  <NotificationProvider>
+                    {/* <AppLoader /> <PageLoader /> */}
+                    {/* <AppRouter /> */}
+
+                    <TasksPage isDark={isDark} />
+                    <Dashboard isDark={isDark} toggleTheme={toggleTheme} />
+                    {/* Enhanced Toast Notifications with preserved styling */}
+                    <Toaster
+                      position="top-center"
+                      containerClassName="safe-area-top"
+                      toastOptions={{
+                        duration: 4000,
+                        style: {
+                          background: "var(--homey-glass-bg)",
+                          backdropFilter: "blur(16px)",
+                          border: "1px solid var(--homey-glass-border)",
+                          color: "var(--homey-text)",
+                          borderRadius: "1rem",
+                          padding: "12px 16px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.25)",
+                          maxWidth: "calc(100vw - 32px)",
+                        },
+                        success: {
+                          style: {
+                            borderColor: "rgba(16, 185, 129, 0.3)",
+                            background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), var(--homey-glass-bg))",
+                          },
+                          iconTheme: {
+                            primary: "#10b981",
+                            secondary: "#fff",
+                          },
+                        },
+                        error: {
+                          style: {
+                            borderColor: "rgba(239, 68, 68, 0.3)",
+                            background: "linear-gradient(135deg, rgba(239, 68, 68, 0.1), var(--homey-glass-bg))",
+                          },
+                          iconTheme: {
+                            primary: "#ef4444",
+                            secondary: "#fff",
+                          },
+                        },
+                        loading: {
+                          style: {
+                            borderColor: "var(--homey-glass-violet)",
+                            background: "linear-gradient(135deg, var(--homey-glass-violet), var(--homey-glass-bg))",
+                          },
+                        },
+                      }}
+                    />
+                  </NotificationProvider>
+                </RealtimeProvider>
+              </HouseholdProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </div>
     </ErrorBoundary>

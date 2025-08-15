@@ -150,7 +150,7 @@ interface HouseholdProviderProps {
 }
 
 export const HouseholdProvider: React.FC<HouseholdProviderProps> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, initialized: authInitialized } = useAuth();
   const [state, dispatch] = useReducer(householdReducer, {
     households: [],
     currentHousehold: null,
@@ -163,12 +163,12 @@ export const HouseholdProvider: React.FC<HouseholdProviderProps> = ({ children }
 
   // Load households when user changes
   useEffect(() => {
-    if (user) {
+    if (authInitialized && user) {
       loadHouseholds();
-    } else {
+    } else if (authInitialized && !user) {
       dispatch({ type: "CLEAR_HOUSEHOLD_DATA" });
     }
-  }, [user]);
+  }, [user, authInitialized]);
 
   const loadHouseholds = async (): Promise<void> => {
     try {

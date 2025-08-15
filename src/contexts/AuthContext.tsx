@@ -111,9 +111,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // FIXED: Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Auth timeout")), 10000));
+
+        const authPromise = supabase.auth.getSession();
+
         const {
           data: { session },
-        } = await supabase.auth.getSession();
+        } = (await Promise.race([authPromise, timeoutPromise])) as any;
 
         if (session?.user) {
           await handleAuthSuccess(session.user, session);
@@ -123,6 +128,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error("Auth initialization error:", error);
         dispatch({ type: "AUTH_ERROR" });
+
+        // ENHANCED: Show user-friendly error for timeout
+        if (error instanceof Error && error.message === "Auth timeout") {
+          toast.error("Authentication is taking longer than expected. Please refresh the page.");
+        }
       }
     };
 
