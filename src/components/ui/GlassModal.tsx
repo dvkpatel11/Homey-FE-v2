@@ -63,7 +63,7 @@ const GlassModal: React.FC<GlassModalProps> = ({
           {/* Modal */}
           <motion.div
             className={`
-              glass-card glass-card-strong rounded-glass-lg w-full
+              glass-card-strong rounded-glass-lg w-full
               ${maxWidthClasses[maxWidth]}
               relative z-10 max-h-[90vh] overflow-hidden
               ${className}
@@ -76,10 +76,10 @@ const GlassModal: React.FC<GlassModalProps> = ({
           >
             {/* Header */}
             {(title || showCloseButton) && (
-              <div className="flex items-center justify-between p-6 border-b border-glass-border">
+              <div className="flex items-center justify-between p-4 border-b border-glass-border">
                 <div className="flex-1">
                   {title && (
-                    <GlassHeading level={3} className="pr-8 !text-white" style={{ color: "var(--homey-primary)" }}>
+                    <GlassHeading level={3} style={{ fontWeight: "initial" }} className="pr-8 text-glass">
                       {title}
                     </GlassHeading>
                   )}
@@ -87,25 +87,18 @@ const GlassModal: React.FC<GlassModalProps> = ({
                 {showCloseButton && (
                   <IconButton
                     icon={X}
-                    variant="ghost"
+                    variant="danger"
                     size="sm"
                     onClick={onClose}
-                    className="flex-shrink-0 !text-white hover:!bg-white/10"
+                    className="flex-shrink-0 text-glass hover:bg-surface-1"
                   />
                 )}
               </div>
             )}
 
-            {/* Content with forced white text */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              <div
-                className="modal-content"
-                style={{
-                  color: "white",
-                }}
-              >
-                {children}
-              </div>
+            {/* Content */}
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="modal-content">{children}</div>
             </div>
           </motion.div>
         </div>
@@ -113,7 +106,6 @@ const GlassModal: React.FC<GlassModalProps> = ({
     </AnimatePresence>
   );
 
-  // Render modal in portal
   return createPortal(modalContent, document.body);
 };
 

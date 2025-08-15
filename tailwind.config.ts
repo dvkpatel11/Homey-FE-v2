@@ -219,18 +219,6 @@ const config: Config = {
         ".text-glass-muted": {
           color: "var(--homey-text-muted)",
         },
-
-        // Dynamic checkered pattern
-        ".checkered-violet": {
-          "background-image": `
-            linear-gradient(45deg, var(--homey-glass-violet) 25%, transparent 25%),
-            linear-gradient(-45deg, var(--homey-glass-violet) 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, var(--homey-glass-violet) 75%),
-            linear-gradient(-45deg, transparent 75%, var(--homey-glass-violet) 75%)
-          `,
-          "background-size": "20px 20px",
-          "background-position": "0 0, 0 10px, 10px -10px, -10px 0px",
-        },
       };
       addUtilities(newUtilities);
     },

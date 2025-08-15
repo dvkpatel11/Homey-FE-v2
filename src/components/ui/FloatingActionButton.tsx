@@ -4,10 +4,7 @@ import { forwardRef } from "react";
 import type { FloatingActionButtonProps } from "./types";
 
 const FloatingActionButton = forwardRef<HTMLButtonElement, FloatingActionButtonProps>(
-  (
-    { onClick, icon: Icon = Plus, className = "", color = "from-homey-violet-500 to-homey-violet-600", ...props },
-    ref
-  ) => {
+  ({ onClick, icon: Icon = Plus, className = "", ...props }, ref) => {
     return (
       <motion.button
         ref={ref}
@@ -15,7 +12,7 @@ const FloatingActionButton = forwardRef<HTMLButtonElement, FloatingActionButtonP
         className={`
           fixed bottom-24 sm:bottom-32 right-4 sm:right-6 z-30
           w-14 h-14 sm:w-16 sm:h-16
-          bg-gradient-to-r ${color}
+          bg-gradient-to-r from-primary to-primary-bright
           rounded-full shadow-glass-lg
           flex items-center justify-center
           text-white
@@ -42,4 +39,5 @@ const FloatingActionButton = forwardRef<HTMLButtonElement, FloatingActionButtonP
 );
 
 FloatingActionButton.displayName = "FloatingActionButton";
+
 export default FloatingActionButton;

@@ -18,12 +18,12 @@ const GlassButton = forwardRef<any, GlassButtonProps>(
     ref
   ) => {
     const variants: any = {
-      primary: "bg-violet-600 text-white border-violet-600 hover:bg-violet-600/70 hover:border-violet-600/70",
-      secondary: "bg-red-500/80 text-white border-red-500/80 hover:bg-red-500/50 hover:border-red-500/50",
-      success: "bg-emerald-500/80 text-white border-emerald-500/80 hover:bg-emerald-500/50 hover:border-emerald-500/50",
-      ghost: "bg-white/10 text-white border-white/20 hover:bg-white/5 hover:border-white/10",
-      danger: "bg-red-500/80 text-white border-red-500/80 hover:bg-red-500/50 hover:border-red-500/50",
-      warning: "bg-yellow-500/80 text-white border-yellow-500/80 hover:bg-yellow-500/50 hover:border-yellow-500/50",
+      primary: "btn-primary",
+      secondary: "btn-secondary",
+      success: "btn-success",
+      ghost: "glass-button",
+      danger: "btn-danger",
+      warning: "btn-secondary",
     };
 
     const sizes = {
@@ -37,8 +37,8 @@ const GlassButton = forwardRef<any, GlassButtonProps>(
       <motion.button
         ref={ref}
         className={`
-          inline-flex items-center justify-center space-x-2 rounded-glass font-medium
-          transition-all duration-300 relative overflow-hidden border
+          inline-flex items-center justify-center gap-2 rounded-glass font-medium
+          transition-all duration-300 relative overflow-hidden
           ${variants[variant]} ${sizes[size]}
           ${disabled || loading ? "opacity-50 cursor-not-allowed" : "hover:scale-105"}
           ${className}
@@ -53,7 +53,7 @@ const GlassButton = forwardRef<any, GlassButtonProps>(
           </div>
         )}
 
-        <div className={`flex items-center space-x-2 ${loading ? "opacity-0" : ""}`}>
+        <div className={`flex items-center gap-2 ${loading ? "opacity-0" : ""}`}>
           {Icon && <Icon className="w-4 h-4" />}
           <span>{children as React.ReactNode}</span>
           {RightIcon && <RightIcon className="w-4 h-4" />}

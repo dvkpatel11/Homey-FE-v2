@@ -32,8 +32,6 @@ const GlassTextarea = forwardRef<HTMLTextAreaElement, GlassTextareaProps>(
           rows={rows}
           className={`
             glass-input w-full px-4 py-3 rounded-glass resize-none
-            text-glass placeholder:text-glass-muted
-            transition-all duration-300
             ${error ? "border-red-400/50 focus:border-red-400" : ""}
             ${disabled ? "opacity-50 cursor-not-allowed" : ""}
             ${className}
@@ -47,7 +45,7 @@ const GlassTextarea = forwardRef<HTMLTextAreaElement, GlassTextareaProps>(
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs flex items-center space-x-1 text-red-400"
+            className="text-xs flex items-center gap-1 text-red-400"
           >
             <X className="w-3 h-3" />
             <span>{error}</span>

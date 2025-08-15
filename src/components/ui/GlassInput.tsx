@@ -66,11 +66,9 @@ const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
             ref={ref}
             type={inputType}
             className={`
-              glass-input w-full px-4 py-3 rounded-glass
-              ${InputIcon ? "pl-11" : ""}
-              ${RightIcon || showPasswordToggle ? "pr-11" : ""}
-              text-glass placeholder:text-glass-muted
-              transition-all duration-300
+              glass-input w-full rounded-glass
+              ${InputIcon ? "pl-11" : "px-4"} py-3
+              ${RightIcon || showPasswordToggle ? "pr-11" : "px-4"}
               ${focused ? "ring-2 ring-primary/20" : ""}
               ${error ? "border-red-400/50 focus:border-red-400" : ""}
               ${success ? "border-emerald-400/50 focus:border-emerald-400" : ""}
@@ -115,7 +113,7 @@ const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`text-xs flex items-center space-x-1 ${error ? "text-red-400" : "text-emerald-400"}`}
+              className={`text-xs flex items-center gap-1 ${error ? "text-red-400" : "text-emerald-400"}`}
             >
               {error ? <X className="w-3 h-3" /> : <Check className="w-3 h-3" />}
               <span>{error || success}</span>

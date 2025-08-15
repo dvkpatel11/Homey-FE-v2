@@ -32,25 +32,41 @@ const GlassSelect = forwardRef<HTMLSelectElement, GlassSelectProps>(
             ref={ref}
             className={`
               glass-input w-full px-4 py-3 pr-10 rounded-glass appearance-none
-              text-glass
-              transition-all duration-300
               ${error ? "border-red-400/50 focus:border-red-400" : ""}
               ${disabled ? "opacity-50 cursor-not-allowed" : ""}
               ${className}
             `}
             disabled={disabled}
+            style={{
+              colorScheme: document.documentElement.classList.contains("dark") ? "dark" : "light",
+            }}
             {...props}
           >
-            <option value="">{placeholder}</option>
+            <option
+              value=""
+              style={{
+                backgroundColor: "var(--homey-bg)",
+                color: "var(--homey-text)",
+              }}
+            >
+              {placeholder}
+            </option>
             {options.map((option, index) => (
-              <option key={index} value={option.value} className="bg-surface-2 text-glass">
+              <option
+                key={index}
+                value={option.value}
+                style={{
+                  backgroundColor: "var(--homey-bg)",
+                  color: "var(--homey-text)",
+                }}
+              >
                 {option.label}
               </option>
             ))}
           </select>
 
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <ChevronDown className="w-4 h-4 text-glass-muted" />
+            <ChevronDown className="w-4 h-4 glass-select-arrow" />
           </div>
         </div>
 
@@ -58,7 +74,7 @@ const GlassSelect = forwardRef<HTMLSelectElement, GlassSelectProps>(
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs flex items-center space-x-1 text-red-400"
+            className="text-xs flex items-center gap-1 text-red-400"
           >
             <X className="w-3 h-3" />
             <span>{error}</span>

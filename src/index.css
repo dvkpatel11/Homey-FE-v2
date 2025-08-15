@@ -23,22 +23,27 @@
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
-.text-glass {
+.dark .glass-input option {
+  background: var(--homey-bg);
   color: var(--homey-text);
 }
 
-.text-glass-secondary {
-  color: var(--homey-text-secondary);
-}
-
-.text-glass-muted {
-  color: var(--homey-text-muted);
+.dark .glass-input[type="date"]::-webkit-calendar-picker-indicator,
+.dark .glass-input[type="date"]::-webkit-inner-spin-button,
+.dark .glass-input[type="date"]::-webkit-clear-button {
+  filter: invert(1);
 }
 
 :root {
   /* CSS Variables - populated dynamically from colors.ts */
   /* Light Theme values will be injected here */
   --glass-blur: 16px;
+}
+
+:root:not(.dark) .glass-input[type="date"]::-webkit-calendar-picker-indicator,
+:root:not(.dark) .glass-input[type="date"]::-webkit-inner-spin-button,
+:root:not(.dark) .glass-input[type="date"]::-webkit-clear-button {
+  filter: invert(0);
 }
 
 /* Dark theme - values injected from colors.ts */
@@ -68,7 +73,6 @@
 
     /* Base background with checkered pattern */
     background-color: var(--homey-bg);
-    @apply checkered-violet;
 
     /* Prevent select on mobile (allow text content) */
     -webkit-touch-callout: none;
@@ -118,10 +122,9 @@
     box-shadow: 0 8px 32px var(--homey-glass-violet);
   }
 
-  /* Enhanced semantic button styles */
   .btn-primary {
-    background: var(--homey-primary);
-    color: white;
+    background: var(--homey-primary-dark);
+    color: var(--homey-text);
     border: 1px solid var(--homey-primary);
     transition: all 0.3s ease;
     border-radius: 0.5rem;
@@ -134,11 +137,12 @@
     border-color: var(--homey-primary-bright);
     transform: translateY(-1px);
     box-shadow: 0 10px 25px var(--homey-glass-violet);
+    color: var(--homey-text);
   }
 
   .btn-success {
     background: var(--color-success);
-    color: white;
+    color: var(--homey-text);
     border: 1px solid var(--color-success);
     transition: all 0.3s ease;
     border-radius: 0.5rem;
@@ -151,11 +155,12 @@
     border-color: #059669;
     transform: translateY(-1px);
     box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    color: var(--homey-text);
   }
 
   .btn-danger {
     background: var(--color-error);
-    color: white;
+    color: var(--homey-text);
     border: 1px solid var(--color-error);
     transition: all 0.3s ease;
     border-radius: 0.5rem;
@@ -168,6 +173,7 @@
     border-color: #dc2626;
     transform: translateY(-1px);
     box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+    color: var(--homey-text);
   }
 
   .btn-cancel {
@@ -183,6 +189,7 @@
   .btn-cancel:hover {
     background: var(--surface-2);
     border-color: var(--surface-3);
+    color: var(--color-cancel);
   }
 
   .btn-secondary {
@@ -198,6 +205,119 @@
   .btn-secondary:hover {
     background: var(--surface-1);
     border-color: var(--homey-primary);
+    color: var(--homey-text);
+  }
+
+  .border-glass-border {
+    border-color: var(--homey-glass-border);
+  }
+
+  .shadow-glass-violet {
+    box-shadow: 0 8px 32px var(--homey-glass-violet);
+  }
+}
+
+@layer utilities {
+  /* Mobile optimizations */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area support */
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .glass-card {
+    background: var(--homey-glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--homey-glass-border);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 0 0 1px var(--homey-glass-border);
+    border-radius: 1rem;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateZ(0);
+  }
+
+  .glass-card-hover:hover {
+    transform: scale(1.02) translateY(-4px) translateZ(0);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.25),
+      0 0 60px var(--homey-glass-violet);
+    border-color: var(--homey-glass-violet);
+    filter: drop-shadow(0 0 20px var(--surface-2));
+  }
+
+  .glass-button {
+    background: var(--homey-glass-violet);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--homey-glass-violet);
+    transition: all 0.3s ease;
+    color: var(--homey-text);
+  }
+
+  .glass-button:hover {
+    background: var(--homey-primary);
+    border-color: var(--homey-primary);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 10px 25px var(--homey-glass-violet);
+    color: var(--homey-text);
+  }
+
+  .glass-input {
+    background: var(--glass-input-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--homey-glass-border);
+    transition: all 0.3s ease;
+    color: var(--homey-text);
+  }
+
+  .glass-input:focus {
+    outline: none;
+    border-color: var(--homey-primary);
+    box-shadow:
+      0 0 0 3px var(--homey-glass-violet),
+      0 8px 25px var(--homey-glass-violet);
+  }
+
+  .glass-input::placeholder {
+    color: var(--homey-text-muted);
+  }
+
+  .glass-input option {
+    background: var(--homey-bg);
+    color: var(--homey-text);
+    padding: 8px 12px;
+  }
+
+  .glass-input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.7;
+    cursor: pointer;
+  }
+
+  .glass-input[type="date"]::-webkit-inner-spin-button,
+  .glass-input[type="date"]::-webkit-clear-button {
+    opacity: 0.7;
+  }
+
+  .glass-select-arrow {
+    color: var(--homey-text-muted);
+    transition: color 0.3s ease;
   }
 }
 

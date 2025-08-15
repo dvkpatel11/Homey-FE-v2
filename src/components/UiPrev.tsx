@@ -84,7 +84,7 @@ const UIPreview: React.FC<UIPreviewProps> = ({ isDark }) => {
                   <UI.GlassButton variant="success" icon={User}>
                     Success
                   </UI.GlassButton>
-                  <UI.GlassButton variant="secondary" icon={Settings}>
+                  <UI.GlassButton variant="danger" icon={Settings}>
                     Cancel/Error
                   </UI.GlassButton>
                   <UI.GlassButton variant="ghost" icon={Mail}>
@@ -243,9 +243,9 @@ const UIPreview: React.FC<UIPreviewProps> = ({ isDark }) => {
 
             <UI.GlassInput placeholder="Try typing in this input..." icon={User} />
 
-            <div className="flex gap-3 justify-end pt-4">
+            <div className="flex gap-3 justify-center pt-4">
               {/* Cancel button - error/red background */}
-              <UI.GlassButton variant="secondary" onClick={() => setModalOpen(false)}>
+              <UI.GlassButton variant="danger" onClick={() => setModalOpen(false)}>
                 Cancel
               </UI.GlassButton>
 
