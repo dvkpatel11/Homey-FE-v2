@@ -40,13 +40,13 @@ const FloatingElements = () => {
   ];
 
   // Generate floating elements with household items
-  const elements = Array.from({ length: 16 }, (_, i) => {
+  const elements = Array.from({ length:8 }, (_, i) => {
     const IconComponent = householdIcons[i % householdIcons.length];
 
     return {
       id: i,
       icon: IconComponent,
-      size: Math.random() * 40 + 30, // 30-70px
+      size: Math.random() * 20 + 20, // 30-70px
       x: Math.random() * 100,
       y: Math.random() * 100,
       delay: Math.random() * 8,
@@ -55,7 +55,7 @@ const FloatingElements = () => {
         x: (Math.random() - 0.5) * 200, // Random horizontal drift
         y: (Math.random() - 0.5) * 150, // Random vertical drift
       },
-      opacity: 0.3 + Math.random() * 0.4, // 0.3-0.7 opacity
+      opacity: 0.25 + Math.random() * 0.25, // 0.3-0.7 opacity
       rotationSpeed: (Math.random() - 0.5) * 720, // -360 to 360 degrees
     };
   });
@@ -85,19 +85,6 @@ const FloatingElements = () => {
           duration: 20,
           repeat: Infinity,
           ease: "easeInOut",
-        }}
-      />
-
-      {/* Subtle mesh pattern overlay */}
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `
-            linear-gradient(var(--homey-primary)08 1px, transparent 1px),
-            linear-gradient(90deg, var(--homey-primary)08 1px, transparent 1px)
-          `,
-          backgroundSize: "50px 50px",
-          maskImage: "radial-gradient(circle at center, black 30%, transparent 70%)",
         }}
       />
 
@@ -134,7 +121,7 @@ const FloatingElements = () => {
       ))}
 
       {/* Glowing orbs that pulse */}
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 5 }).map((_, i) => (
         <motion.div
           key={`orb-${i}`}
           className="absolute rounded-full"
@@ -143,7 +130,7 @@ const FloatingElements = () => {
             top: `${Math.random() * 100}%`,
             width: Math.random() * 120 + 40,
             height: Math.random() * 120 + 40,
-            background: `radial-gradient(circle, var(--homey-primary)25 0%, var(--homey-primary)10 50%, transparent 70%)`,
+background: `radial-gradient(circle, var(--homey-primary)15 0%, var(--homey-primary)05 50%, transparent 70%)`,
             filter: "blur(20px)",
           }}
           animate={{

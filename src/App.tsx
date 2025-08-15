@@ -5,6 +5,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { Toaster } from "react-hot-toast";
 import { DARK_THEME_COLORS, generateCSSVars, LIGHT_THEME_COLORS } from "./lib/config/colors";
 
+import TasksPage from "./components/EntityPage";
 import FloatingElements from "./components/layout/FloatingElements";
 import { default as Dashboard } from "./components/UiPrev";
 import "./index.css";
@@ -130,9 +131,9 @@ const App: React.FC = () => {
         {/* Floating background elements */}
         <FloatingElements />
         <QueryClientProvider client={queryClient}>
-          {/* <DemoContent /> */}
           {/* <AppLoader />
           <PageLoader /> */}
+          <TasksPage isDark={isDark} />
           <Dashboard isDark={isDark} toggleTheme={toggleTheme} />
           {/* Enhanced Toast Notifications with preserved styling */}
           <Toaster
