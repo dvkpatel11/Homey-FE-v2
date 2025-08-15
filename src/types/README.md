@@ -12,15 +12,17 @@ This directory contains all TypeScript type definitions for the Homey household 
 ## Usage
 
 ### Basic Import
+
 ```typescript
-import { UserProfile, Task, Bill, API_ENDPOINTS } from '@/lib/types';
+import { UserProfile, Task, Bill, API_ENDPOINTS } from "@/types";
 ```
 
 ### API Response Handling
-```typescript
-import { ApiResponse, isApiSuccess, isApiError } from '@/lib/types';
 
-const response = await fetch('/api/households');
+```typescript
+import { ApiResponse, isApiSuccess, isApiError } from "@/types";
+
+const response = await fetch("/api/households");
 const data = await response.json();
 
 if (isApiSuccess<Household[]>(data)) {
@@ -33,8 +35,9 @@ if (isApiSuccess<Household[]>(data)) {
 ```
 
 ### Endpoint Usage
+
 ```typescript
-import { API_ENDPOINTS } from '@/lib/types';
+import { API_ENDPOINTS } from "@/types";
 
 // Type-safe endpoint building
 const url = API_ENDPOINTS.HOUSEHOLDS.GET(householdId);
@@ -42,10 +45,11 @@ const tasksUrl = API_ENDPOINTS.HOUSEHOLDS.TASKS(householdId);
 ```
 
 ### Validation
-```typescript
-import { validateCreateTask, validateEmail } from '@/lib/types';
 
-const taskData = { title: '', description: 'Test task' };
+```typescript
+import { validateCreateTask, validateEmail } from "@/types";
+
+const taskData = { title: "", description: "Test task" };
 const validation = validateCreateTask(taskData);
 
 if (!validation.isValid) {
@@ -63,22 +67,27 @@ if (!validation.isValid) {
 ## Real-time Subscriptions
 
 ```typescript
-import { REALTIME_CHANNELS, RealtimePayload, Message } from '@/lib/types';
+import { REALTIME_CHANNELS, RealtimePayload, Message } from "@/types";
 
 const channel = supabase.channel(REALTIME_CHANNELS.CHAT(householdId));
-channel.on('postgres_changes', {
-  event: '*',
-  schema: 'public',
-  table: 'messages',
-  filter: `household_id=eq.${householdId}`
-}, (payload: RealtimePayload<Message>) => {
-  // Handle real-time message updates
-});
+channel.on(
+  "postgres_changes",
+  {
+    event: "*",
+    schema: "public",
+    table: "messages",
+    filter: `household_id=eq.${householdId}`,
+  },
+  (payload: RealtimePayload<Message>) => {
+    // Handle real-time message updates
+  }
+);
 ```
 
 ## Regeneration
 
 To regenerate these types, run:
+
 ```bash
 ./scripts/generate-types.sh
 ```

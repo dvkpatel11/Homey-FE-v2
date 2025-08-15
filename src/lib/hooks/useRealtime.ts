@@ -3,18 +3,16 @@
  * Handles Supabase real-time subscriptions with connection management
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { supabase } from '@/contexts/AuthContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useHousehold } from '@/contexts/HouseholdContext';
-import { useMobile } from './useMobile';
-import { UUID } from '@/lib/types';
+import { supabase, useAuth } from "@/contexts/AuthContext";
+import { useHousehold } from "@/contexts/HouseholdContext";
+import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useMobile } from "./useMobile";
 
 export interface RealtimeSubscription {
   channel: string;
   table: string;
-  event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+  event: "INSERT" | "UPDATE" | "DELETE" | "*";
   filter?: string;
   callback: (payload: RealtimePostgresChangesPayload<any>) => void;
 }
@@ -32,7 +30,7 @@ export interface RealtimeActions {
   unsubscribe: (channelName: string) => void;
   unsubscribeAll: () => void;
   reconnect: () => Promise<void>;
-  getConnectionStatus: () => 'CONNECTING' | 'OPEN' | 'CLOSED';
+  getConnectionStatus: () => "CONNECTING" | "OPEN" | "CLOSED";
 }
 
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
@@ -43,7 +41,7 @@ export const useRealtime = () => {
   const { user } = useAuth();
   const { currentHousehold } = useHousehold();
   const { isOnline } = useMobile();
-  
+
   const [status, setStatus] = useState<RealtimeStatus>({
     connected: false,
     reconnecting: false,
@@ -61,10 +59,10 @@ export const useRealtime = () => {
   useEffect(() => {
     const updateStatus = () => {
       const connectionStatus = getConnectionStatus();
-      setStatus(prev => ({
+      setStatus((prev) => ({
         ...prev,
-        connected: connectionStatus === 'OPEN',
-        error: connectionStatus === 'CLOSED' ? 'Connection lost' : null,
+        connected: connectionStatus === "OPEN",
+        error: connectionStatus === "CLOSED" ? "Connection lost" : null,
       }));
     };
 
@@ -78,7 +76,7 @@ export const useRealtime = () => {
   // Handle online/offline events
   useEffect(() => {
     if (!isOnline && status.connected) {
-      setStatus(prev => ({ ...prev, connected: false, error: 'Device offline' }));
+      setStatus((prev) => ({ ...prev, connected: false, error: "Device offline" }));
     } else if (isOnline && !status.connected) {
       reconnect();
     }
@@ -115,42 +113,46 @@ export const useRealtime = () => {
     try {
       const channel = supabase
         .channel(channelName)
-        .on('postgres_changes', {
-          event,
-          schema: 'public',
-          table,
-          filter,
-        }, callback)
-        .on('system', {}, (payload) => {
-          if (payload.event === 'error') {
+        .on(
+          "postgres_changes",
+          {
+            event,
+            schema: "public",
+            table,
+            filter,
+          },
+          callback
+        )
+        .on("system", {}, (payload) => {
+          if (payload.event === "error") {
             console.error(`Realtime error on channel ${channelName}:`, payload);
-            setStatus(prev => ({ 
-              ...prev, 
-              error: `Channel error: ${payload.message}` 
+            setStatus((prev) => ({
+              ...prev,
+              error: `Channel error: ${payload.message}`,
             }));
           }
         })
         .subscribe((status, err) => {
-          if (status === 'SUBSCRIBED') {
-            setStatus(prev => ({
+          if (status === "SUBSCRIBED") {
+            setStatus((prev) => ({
               ...prev,
               subscriptions: [...prev.subscriptions, channelName],
               error: null,
             }));
-          } else if (status === 'CHANNEL_ERROR') {
+          } else if (status === "CHANNEL_ERROR") {
             console.error(`Channel ${channelName} error:`, err);
-            setStatus(prev => ({ 
-              ...prev, 
-              error: `Subscription error: ${err?.message}` 
+            setStatus((prev) => ({
+              ...prev,
+              error: `Subscription error: ${err?.message}`,
             }));
-          } else if (status === 'TIMED_OUT') {
+          } else if (status === "TIMED_OUT") {
             console.warn(`Channel ${channelName} timed out`);
             // Attempt to reconnect
             scheduleReconnect();
-          } else if (status === 'CLOSED') {
-            setStatus(prev => ({
+          } else if (status === "CLOSED") {
+            setStatus((prev) => ({
               ...prev,
-              subscriptions: prev.subscriptions.filter(s => s !== channelName),
+              subscriptions: prev.subscriptions.filter((s) => s !== channelName),
             }));
           }
         });
@@ -161,9 +163,9 @@ export const useRealtime = () => {
       return () => unsubscribe(channelName);
     } catch (error) {
       console.error(`Failed to subscribe to channel ${channelName}:`, error);
-      setStatus(prev => ({ 
-        ...prev, 
-        error: `Failed to subscribe: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      setStatus((prev) => ({
+        ...prev,
+        error: `Failed to subscribe: ${error instanceof Error ? error.message : "Unknown error"}`,
       }));
       return () => {};
     }
@@ -175,10 +177,10 @@ export const useRealtime = () => {
       try {
         supabase.removeChannel(channel);
         channels.current.delete(channelName);
-        
-        setStatus(prev => ({
+
+        setStatus((prev) => ({
           ...prev,
-          subscriptions: prev.subscriptions.filter(s => s !== channelName),
+          subscriptions: prev.subscriptions.filter((s) => s !== channelName),
         }));
       } catch (error) {
         console.error(`Failed to unsubscribe from channel ${channelName}:`, error);
@@ -191,8 +193,8 @@ export const useRealtime = () => {
       unsubscribe(channelName);
     });
     channels.current.clear();
-    
-    setStatus(prev => ({ ...prev, subscriptions: [] }));
+
+    setStatus((prev) => ({ ...prev, subscriptions: [] }));
   }, [unsubscribe]);
 
   const reconnect = useCallback(async () => {
@@ -200,46 +202,45 @@ export const useRealtime = () => {
       return;
     }
 
-    setStatus(prev => ({ ...prev, reconnecting: true, error: null }));
+    setStatus((prev) => ({ ...prev, reconnecting: true, error: null }));
     reconnectAttempts.current += 1;
 
     try {
       // Get current subscriptions to re-establish
       const currentChannels = Array.from(channels.current.keys());
-      
+
       // Unsubscribe all
       unsubscribeAll();
-      
+
       // Wait before reconnecting
-      await new Promise(resolve => setTimeout(resolve, RECONNECT_DELAY));
-      
+      await new Promise((resolve) => setTimeout(resolve, RECONNECT_DELAY));
+
       // Check if we're still online
       if (!isOnline) {
-        throw new Error('Device is offline');
+        throw new Error("Device is offline");
       }
 
       // Reset connection
       await supabase.realtime.disconnect();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setStatus(prev => ({ 
-        ...prev, 
-        reconnecting: false, 
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setStatus((prev) => ({
+        ...prev,
+        reconnecting: false,
         connected: true,
-        error: null 
+        error: null,
       }));
-      
+
       // Reset reconnect attempts on successful connection
       reconnectAttempts.current = 0;
-      
     } catch (error) {
-      console.error('Reconnection failed:', error);
-      setStatus(prev => ({ 
-        ...prev, 
-        reconnecting: false, 
-        error: `Reconnection failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      console.error("Reconnection failed:", error);
+      setStatus((prev) => ({
+        ...prev,
+        reconnecting: false,
+        error: `Reconnection failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       }));
-      
+
       // Schedule another reconnect attempt
       if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
         scheduleReconnect();
@@ -251,33 +252,33 @@ export const useRealtime = () => {
     if (reconnectTimer.current) {
       clearTimeout(reconnectTimer.current);
     }
-    
+
     const delay = RECONNECT_DELAY * Math.pow(2, reconnectAttempts.current); // Exponential backoff
     reconnectTimer.current = setTimeout(() => {
       reconnect();
     }, delay);
   }, [reconnect]);
 
-  const getConnectionStatus = useCallback((): 'CONNECTING' | 'OPEN' | 'CLOSED' => {
+  const getConnectionStatus = useCallback((): "CONNECTING" | "OPEN" | "CLOSED" => {
     try {
-      return supabase.realtime.connection?.readyState === WebSocket.OPEN 
-        ? 'OPEN' 
+      return supabase.realtime.connection?.readyState === WebSocket.OPEN
+        ? "OPEN"
         : supabase.realtime.connection?.readyState === WebSocket.CONNECTING
-        ? 'CONNECTING'
-        : 'CLOSED';
+          ? "CONNECTING"
+          : "CLOSED";
     } catch {
-      return 'CLOSED';
+      return "CLOSED";
     }
   }, []);
 
   const startHeartbeat = useCallback(() => {
     heartbeatTimer.current = setInterval(() => {
-      setStatus(prev => ({ ...prev, lastHeartbeat: Date.now() }));
-      
+      setStatus((prev) => ({ ...prev, lastHeartbeat: Date.now() }));
+
       // Check if connection is still alive
       const connectionStatus = getConnectionStatus();
-      if (connectionStatus === 'CLOSED') {
-        setStatus(prev => ({ ...prev, connected: false }));
+      if (connectionStatus === "CLOSED") {
+        setStatus((prev) => ({ ...prev, connected: false }));
         scheduleReconnect();
       }
     }, HEARTBEAT_INTERVAL);
@@ -313,33 +314,35 @@ export const useHouseholdRealtime = () => {
   const { currentHousehold } = useHousehold();
   const { subscribe } = useRealtime();
 
-  const subscribeToHouseholdChanges = useCallback((
-    callback: (payload: RealtimePostgresChangesPayload<any>) => void
-  ) => {
-    if (!currentHousehold) return () => {};
+  const subscribeToHouseholdChanges = useCallback(
+    (callback: (payload: RealtimePostgresChangesPayload<any>) => void) => {
+      if (!currentHousehold) return () => {};
 
-    return subscribe({
-      channel: `household:${currentHousehold.id}`,
-      table: 'households',
-      event: 'UPDATE',
-      filter: `id=eq.${currentHousehold.id}`,
-      callback,
-    });
-  }, [currentHousehold, subscribe]);
+      return subscribe({
+        channel: `household:${currentHousehold.id}`,
+        table: "households",
+        event: "UPDATE",
+        filter: `id=eq.${currentHousehold.id}`,
+        callback,
+      });
+    },
+    [currentHousehold, subscribe]
+  );
 
-  const subscribeToMemberChanges = useCallback((
-    callback: (payload: RealtimePostgresChangesPayload<any>) => void
-  ) => {
-    if (!currentHousehold) return () => {};
+  const subscribeToMemberChanges = useCallback(
+    (callback: (payload: RealtimePostgresChangesPayload<any>) => void) => {
+      if (!currentHousehold) return () => {};
 
-    return subscribe({
-      channel: `household-members:${currentHousehold.id}`,
-      table: 'household_members',
-      event: '*',
-      filter: `household_id=eq.${currentHousehold.id}`,
-      callback,
-    });
-  }, [currentHousehold, subscribe]);
+      return subscribe({
+        channel: `household-members:${currentHousehold.id}`,
+        table: "household_members",
+        event: "*",
+        filter: `household_id=eq.${currentHousehold.id}`,
+        callback,
+      });
+    },
+    [currentHousehold, subscribe]
+  );
 
   return {
     subscribeToHouseholdChanges,
@@ -351,19 +354,20 @@ export const useUserRealtime = () => {
   const { user } = useAuth();
   const { subscribe } = useRealtime();
 
-  const subscribeToUserNotifications = useCallback((
-    callback: (payload: RealtimePostgresChangesPayload<any>) => void
-  ) => {
-    if (!user) return () => {};
+  const subscribeToUserNotifications = useCallback(
+    (callback: (payload: RealtimePostgresChangesPayload<any>) => void) => {
+      if (!user) return () => {};
 
-    return subscribe({
-      channel: `user-notifications:${user.id}`,
-      table: 'notifications',
-      event: 'INSERT',
-      filter: `user_id=eq.${user.id}`,
-      callback,
-    });
-  }, [user, subscribe]);
+      return subscribe({
+        channel: `user-notifications:${user.id}`,
+        table: "notifications",
+        event: "INSERT",
+        filter: `user_id=eq.${user.id}`,
+        callback,
+      });
+    },
+    [user, subscribe]
+  );
 
   return {
     subscribeToUserNotifications,

@@ -3,26 +3,24 @@
  * Handles bills, payments, splits, and balance calculations with real-time updates
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { 
-  Bill, 
-  CreateBillRequest, 
+import { supabase, useAuth } from "@/contexts/AuthContext";
+import { useHousehold } from "@/contexts/HouseholdContext";
+import { billsApi } from "@/lib/api";
+import {
+  Bill,
+  BillFilterParams,
   BillListResponse,
+  CreateBillRequest,
   HouseholdBalances,
   RecordPaymentRequest,
-  BillFilterParams,
-  BillSplit,
   UUID,
+  isApiError,
   isApiSuccess,
-  isApiError
-} from '@/lib/types';
-import { billsApi } from '@/lib/api';
-import { useHousehold } from '@/contexts/HouseholdContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/contexts/AuthContext';
-import { useLocalStorage } from './useLocalStorage';
-import { useMobile } from './useMobile';
-import toast from 'react-hot-toast';
+} from "@/types";
+import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useLocalStorage } from "./useLocalStorage";
+import { useMobile } from "./useMobile";
 
 export interface ExpenseState {
   bills: Bill[];
@@ -54,55 +52,48 @@ export interface ExpenseActions {
 
 // Bill splitting utility hook
 export const useBillSplitting = () => {
-  const calculateEqualSplit = useCallback((
-    totalAmount: number,
-    memberCount: number
-  ) => {
+  const calculateEqualSplit = useCallback((totalAmount: number, memberCount: number) => {
     const amountPerPerson = totalAmount / memberCount;
     return Number(amountPerPerson.toFixed(2));
   }, []);
 
-  const calculatePercentageSplit = useCallback((
-    totalAmount: number,
-    percentage: number
-  ) => {
+  const calculatePercentageSplit = useCallback((totalAmount: number, percentage: number) => {
     const amount = (totalAmount * percentage) / 100;
     return Number(amount.toFixed(2));
   }, []);
 
-  const validateSplits = useCallback((
-    splits: Array<{ amount_owed?: string; percentage?: string }>,
-    totalAmount: number
-  ): { isValid: boolean; error?: string } => {
-    const hasAmounts = splits.some(s => s.amount_owed);
-    const hasPercentages = splits.some(s => s.percentage);
+  const validateSplits = useCallback(
+    (
+      splits: Array<{ amount_owed?: string; percentage?: string }>,
+      totalAmount: number
+    ): { isValid: boolean; error?: string } => {
+      const hasAmounts = splits.some((s) => s.amount_owed);
+      const hasPercentages = splits.some((s) => s.percentage);
 
-    if (hasAmounts && hasPercentages) {
-      return { isValid: false, error: 'Cannot mix amount and percentage splits' };
-    }
-
-    if (hasAmounts) {
-      const totalSplit = splits.reduce((sum, split) => 
-        sum + parseFloat(split.amount_owed || '0'), 0
-      );
-      
-      if (Math.abs(totalSplit - totalAmount) > 0.01) {
-        return { isValid: false, error: 'Split amounts must equal total amount' };
+      if (hasAmounts && hasPercentages) {
+        return { isValid: false, error: "Cannot mix amount and percentage splits" };
       }
-    }
 
-    if (hasPercentages) {
-      const totalPercentage = splits.reduce((sum, split) => 
-        sum + parseFloat(split.percentage || '0'), 0
-      );
-      
-      if (Math.abs(totalPercentage - 100) > 0.01) {
-        return { isValid: false, error: 'Percentages must total 100%' };
+      if (hasAmounts) {
+        const totalSplit = splits.reduce((sum, split) => sum + parseFloat(split.amount_owed || "0"), 0);
+
+        if (Math.abs(totalSplit - totalAmount) > 0.01) {
+          return { isValid: false, error: "Split amounts must equal total amount" };
+        }
       }
-    }
 
-    return { isValid: true };
-  }, []);
+      if (hasPercentages) {
+        const totalPercentage = splits.reduce((sum, split) => sum + parseFloat(split.percentage || "0"), 0);
+
+        if (Math.abs(totalPercentage - 100) > 0.01) {
+          return { isValid: false, error: "Percentages must total 100%" };
+        }
+      }
+
+      return { isValid: true };
+    },
+    []
+  );
 
   return {
     calculateEqualSplit,
@@ -115,7 +106,7 @@ export const useExpenses = () => {
   const { currentHousehold } = useHousehold();
   const { user } = useAuth();
   const { lightImpact } = useMobile().hapticFeedback || { lightImpact: () => {} };
-  
+
   const [state, setState] = useState<ExpenseState>({
     bills: [],
     balances: null,
@@ -128,26 +119,26 @@ export const useExpenses = () => {
 
   // Persistent filter preferences
   const [savedFilters, setSavedFilters] = useLocalStorage<BillFilterParams>(
-    `expense-filters-${currentHousehold?.id || 'none'}`,
+    `expense-filters-${currentHousehold?.id || "none"}`,
     {}
   );
 
   // Load bills and balances when household changes
   useEffect(() => {
     if (currentHousehold) {
-      setState(prev => ({ ...prev, filters: savedFilters }));
+      setState((prev) => ({ ...prev, filters: savedFilters }));
       refreshData();
-      
+
       // Set up real-time subscription
       const unsubscribe = subscribeToExpenseUpdates();
       return unsubscribe;
     } else {
-      setState(prev => ({ 
-        ...prev, 
-        bills: [], 
+      setState((prev) => ({
+        ...prev,
+        bills: [],
         balances: null,
         selectedBills: new Set(),
-        filters: {} 
+        filters: {},
       }));
     }
   }, [currentHousehold, savedFilters]);
@@ -161,21 +152,21 @@ export const useExpenses = () => {
     if (!currentHousehold) return;
 
     try {
-      setState(prev => ({ ...prev, loading: true }));
+      setState((prev) => ({ ...prev, loading: true }));
 
       const activeFilters = filters || state.filters;
       const response = await billsApi.getBills(currentHousehold.id, activeFilters);
 
       if (isApiSuccess<BillListResponse>(response)) {
-        setState(prev => ({ ...prev, bills: response.data.data }));
+        setState((prev) => ({ ...prev, bills: response.data.data }));
       } else if (isApiError(response)) {
         toast.error(response.error.message);
       }
     } catch (error) {
-      console.error('Load bills error:', error);
-      toast.error('Failed to load bills');
+      console.error("Load bills error:", error);
+      toast.error("Failed to load bills");
     } finally {
-      setState(prev => ({ ...prev, loading: false }));
+      setState((prev) => ({ ...prev, loading: false }));
     }
   };
 
@@ -183,21 +174,21 @@ export const useExpenses = () => {
     if (!currentHousehold) return null;
 
     try {
-      setState(prev => ({ ...prev, creating: true }));
+      setState((prev) => ({ ...prev, creating: true }));
 
       const response = await billsApi.createBill(currentHousehold.id, data);
 
       if (isApiSuccess<Bill>(response)) {
-        setState(prev => ({ 
-          ...prev, 
-          bills: [response.data, ...prev.bills] 
+        setState((prev) => ({
+          ...prev,
+          bills: [response.data, ...prev.bills],
         }));
-        
+
         // Refresh balances after creating bill
         await loadBalances();
-        
+
         lightImpact?.();
-        toast.success('Bill created successfully');
+        toast.success("Bill created successfully");
         return response.data;
       } else if (isApiError(response)) {
         toast.error(response.error.message);
@@ -205,11 +196,11 @@ export const useExpenses = () => {
 
       return null;
     } catch (error) {
-      console.error('Create bill error:', error);
-      toast.error('Failed to create bill');
+      console.error("Create bill error:", error);
+      toast.error("Failed to create bill");
       return null;
     } finally {
-      setState(prev => ({ ...prev, creating: false }));
+      setState((prev) => ({ ...prev, creating: false }));
     }
   };
 
@@ -218,15 +209,13 @@ export const useExpenses = () => {
       const response = await billsApi.updateBill(billId, data);
 
       if (isApiSuccess<Bill>(response)) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
-          bills: prev.bills.map(bill => 
-            bill.id === billId ? response.data : bill
-          ),
+          bills: prev.bills.map((bill) => (bill.id === billId ? response.data : bill)),
         }));
-        
+
         lightImpact?.();
-        toast.success('Bill updated successfully');
+        toast.success("Bill updated successfully");
         return true;
       } else if (isApiError(response)) {
         toast.error(response.error.message);
@@ -234,8 +223,8 @@ export const useExpenses = () => {
 
       return false;
     } catch (error) {
-      console.error('Update bill error:', error);
-      toast.error('Failed to update bill');
+      console.error("Update bill error:", error);
+      toast.error("Failed to update bill");
       return false;
     }
   };
@@ -245,17 +234,17 @@ export const useExpenses = () => {
       const response = await billsApi.deleteBill(billId);
 
       if (isApiSuccess(response)) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
-          bills: prev.bills.filter(bill => bill.id !== billId),
-          selectedBills: new Set([...prev.selectedBills].filter(id => id !== billId)),
+          bills: prev.bills.filter((bill) => bill.id !== billId),
+          selectedBills: new Set([...prev.selectedBills].filter((id) => id !== billId)),
         }));
-        
+
         // Refresh balances after deleting bill
         await loadBalances();
-        
+
         lightImpact?.();
-        toast.success('Bill deleted successfully');
+        toast.success("Bill deleted successfully");
         return true;
       } else if (isApiError(response)) {
         toast.error(response.error.message);
@@ -263,24 +252,24 @@ export const useExpenses = () => {
 
       return false;
     } catch (error) {
-      console.error('Delete bill error:', error);
-      toast.error('Failed to delete bill');
+      console.error("Delete bill error:", error);
+      toast.error("Failed to delete bill");
       return false;
     }
   };
 
   const recordPayment = async (data: RecordPaymentRequest): Promise<boolean> => {
     try {
-      setState(prev => ({ ...prev, paying: true }));
+      setState((prev) => ({ ...prev, paying: true }));
 
       const response = await billsApi.recordPayment(data);
 
       if (isApiSuccess(response)) {
         // Refresh bills and balances to reflect payment
         await Promise.all([loadBills(), loadBalances()]);
-        
+
         lightImpact?.();
-        toast.success('Payment recorded successfully');
+        toast.success("Payment recorded successfully");
         return true;
       } else if (isApiError(response)) {
         toast.error(response.error.message);
@@ -288,11 +277,11 @@ export const useExpenses = () => {
 
       return false;
     } catch (error) {
-      console.error('Record payment error:', error);
-      toast.error('Failed to record payment');
+      console.error("Record payment error:", error);
+      toast.error("Failed to record payment");
       return false;
     } finally {
-      setState(prev => ({ ...prev, paying: false }));
+      setState((prev) => ({ ...prev, paying: false }));
     }
   };
 
@@ -303,10 +292,10 @@ export const useExpenses = () => {
       const response = await billsApi.getBalances(currentHousehold.id);
 
       if (isApiSuccess<HouseholdBalances>(response)) {
-        setState(prev => ({ ...prev, balances: response.data }));
+        setState((prev) => ({ ...prev, balances: response.data }));
       }
     } catch (error) {
-      console.error('Load balances error:', error);
+      console.error("Load balances error:", error);
     }
   };
 
@@ -315,25 +304,25 @@ export const useExpenses = () => {
   };
 
   const setFilters = useCallback((filters: Partial<BillFilterParams>) => {
-    setState(prev => ({ 
-      ...prev, 
-      filters: { ...prev.filters, ...filters } 
+    setState((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, ...filters },
     }));
   }, []);
 
   const clearFilters = useCallback(() => {
-    setState(prev => ({ ...prev, filters: {} }));
+    setState((prev) => ({ ...prev, filters: {} }));
   }, []);
 
   const selectBill = useCallback((billId: UUID) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       selectedBills: new Set([...prev.selectedBills, billId]),
     }));
   }, []);
 
   const deselectBill = useCallback((billId: UUID) => {
-    setState(prev => {
+    setState((prev) => {
       const newSelected = new Set(prev.selectedBills);
       newSelected.delete(billId);
       return { ...prev, selectedBills: newSelected };
@@ -341,14 +330,14 @@ export const useExpenses = () => {
   }, []);
 
   const selectAllBills = useCallback(() => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      selectedBills: new Set(prev.bills.map(bill => bill.id)),
+      selectedBills: new Set(prev.bills.map((bill) => bill.id)),
     }));
   }, []);
 
   const clearSelection = useCallback(() => {
-    setState(prev => ({ ...prev, selectedBills: new Set() }));
+    setState((prev) => ({ ...prev, selectedBills: new Set() }));
   }, []);
 
   const bulkMarkPaid = async () => {
@@ -367,8 +356,8 @@ export const useExpenses = () => {
         toast.error(response.error.message);
       }
     } catch (error) {
-      console.error('Bulk mark paid error:', error);
-      toast.error('Failed to mark bills as paid');
+      console.error("Bulk mark paid error:", error);
+      toast.error("Failed to mark bills as paid");
     }
   };
 
@@ -388,8 +377,8 @@ export const useExpenses = () => {
         toast.error(response.error.message);
       }
     } catch (error) {
-      console.error('Bulk delete error:', error);
-      toast.error('Failed to delete bills');
+      console.error("Bulk delete error:", error);
+      toast.error("Failed to delete bills");
     }
   };
 
@@ -398,54 +387,60 @@ export const useExpenses = () => {
 
     const channel = supabase
       .channel(`expenses:${currentHousehold.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'bills',
-        filter: `household_id=eq.${currentHousehold.id}`,
-      }, (payload) => {
-        const { eventType, new: newRecord, old: oldRecord } = payload;
-        
-        setState(prev => {
-          let newBills = [...prev.bills];
-          
-          switch (eventType) {
-            case 'INSERT':
-              // Avoid duplicates (in case user created it)
-              if (!newBills.find(bill => bill.id === newRecord.id)) {
-                newBills = [newRecord as Bill, ...newBills];
-              }
-              break;
-            case 'UPDATE':
-              newBills = newBills.map(bill => 
-                bill.id === newRecord.id ? newRecord as Bill : bill
-              );
-              break;
-            case 'DELETE':
-              newBills = newBills.filter(bill => bill.id !== oldRecord.id);
-              break;
-          }
-          
-          return { ...prev, bills: newBills };
-        });
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bills",
+          filter: `household_id=eq.${currentHousehold.id}`,
+        },
+        (payload) => {
+          const { eventType, new: newRecord, old: oldRecord } = payload;
 
-        // Show notification for bill updates from other users
-        if (newRecord && newRecord.created_by !== user?.id) {
-          if (payload.eventType === 'INSERT') {
-            toast(`New bill: ${newRecord.title}`, { icon: '💰' });
-          } else if (payload.eventType === 'UPDATE') {
-            toast(`Bill updated: ${newRecord.title}`, { icon: '📝' });
+          setState((prev) => {
+            let newBills = [...prev.bills];
+
+            switch (eventType) {
+              case "INSERT":
+                // Avoid duplicates (in case user created it)
+                if (!newBills.find((bill) => bill.id === newRecord.id)) {
+                  newBills = [newRecord as Bill, ...newBills];
+                }
+                break;
+              case "UPDATE":
+                newBills = newBills.map((bill) => (bill.id === newRecord.id ? (newRecord as Bill) : bill));
+                break;
+              case "DELETE":
+                newBills = newBills.filter((bill) => bill.id !== oldRecord.id);
+                break;
+            }
+
+            return { ...prev, bills: newBills };
+          });
+
+          // Show notification for bill updates from other users
+          if (newRecord && newRecord.created_by !== user?.id) {
+            if (payload.eventType === "INSERT") {
+              toast(`New bill: ${newRecord.title}`, { icon: "💰" });
+            } else if (payload.eventType === "UPDATE") {
+              toast(`Bill updated: ${newRecord.title}`, { icon: "📝" });
+            }
           }
         }
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'bill_splits',
-      }, () => {
-        // Refresh balances when payments are made
-        loadBalances();
-      })
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bill_splits",
+        },
+        () => {
+          // Refresh balances when payments are made
+          loadBalances();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -473,22 +468,20 @@ export const useExpenses = () => {
 
   // Computed values
   const totalOutstanding = state.bills
-    .filter(bill => bill.status === 'pending' || bill.status === 'overdue')
+    .filter((bill) => bill.status === "pending" || bill.status === "overdue")
     .reduce((sum, bill) => sum + parseFloat(bill.total_amount), 0);
 
-  const overdueBills = state.bills.filter(bill => bill.status === 'overdue');
+  const overdueBills = state.bills.filter((bill) => bill.status === "overdue");
 
-  const upcomingBills = state.bills.filter(bill => {
-    if (bill.status !== 'pending') return false;
+  const upcomingBills = state.bills.filter((bill) => {
+    if (bill.status !== "pending") return false;
     const dueDate = new Date(bill.due_date);
     const today = new Date();
     const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     return dueDate <= weekFromNow;
   });
 
-  const myBalance = state.balances?.member_balances?.find(
-    balance => balance.user_id === user?.id
-  );
+  const myBalance = state.balances?.member_balances?.find((balance) => balance.user_id === user?.id);
 
   const hasSelection = state.selectedBills.size > 0;
   const isAllSelected = state.selectedBills.size === state.bills.length && state.bills.length > 0;

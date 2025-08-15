@@ -3,50 +3,35 @@
  * Handles real-time messaging, polls, and chat functionality
  */
 
-import { apiClient } from './client';
-import { 
-  Message,
+import {
+  ApiResponse,
   CreateMessageRequest,
-  MessageListResponse,
-  Poll,
   CreatePollVoteRequest,
-  PollVoteResponse,
+  Message,
+  MessageListResponse,
   MessageQueryParams,
+  Poll,
+  PollVoteResponse,
   UUID,
-  ApiResponse
-} from '@/lib/types';
-import { API_ENDPOINTS } from '@/lib/types/endpoints';
+} from "@/types";
+import { API_ENDPOINTS } from "@/types/endpoints";
+import { apiClient } from "./client";
 
 export const chatApi = {
   // Message Management
-  async getMessages(
-    householdId: UUID, 
-    params?: MessageQueryParams
-  ): Promise<ApiResponse<MessageListResponse>> {
-    return apiClient.get<MessageListResponse>(
-      API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId),
-      { params }
-    );
+  async getMessages(householdId: UUID, params?: MessageQueryParams): Promise<ApiResponse<MessageListResponse>> {
+    return apiClient.get<MessageListResponse>(API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId), { params });
   },
 
   async getMessage(messageId: UUID): Promise<ApiResponse<Message>> {
     return apiClient.get<Message>(API_ENDPOINTS.MESSAGES.GET(messageId));
   },
 
-  async sendMessage(
-    householdId: UUID, 
-    data: CreateMessageRequest
-  ): Promise<ApiResponse<Message>> {
-    return apiClient.post<Message>(
-      API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId),
-      data
-    );
+  async sendMessage(householdId: UUID, data: CreateMessageRequest): Promise<ApiResponse<Message>> {
+    return apiClient.post<Message>(API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId), data);
   },
 
-  async editMessage(
-    messageId: UUID, 
-    data: { content: string }
-  ): Promise<ApiResponse<Message>> {
+  async editMessage(messageId: UUID, data: { content: string }): Promise<ApiResponse<Message>> {
     return apiClient.put<Message>(API_ENDPOINTS.MESSAGES.UPDATE(messageId), data);
   },
 
@@ -55,51 +40,35 @@ export const chatApi = {
   },
 
   // Quick Actions
-  async sendQuickMessage(
-    householdId: UUID, 
-    content: string
-  ): Promise<ApiResponse<Message>> {
+  async sendQuickMessage(householdId: UUID, content: string): Promise<ApiResponse<Message>> {
     return this.sendMessage(householdId, {
       content,
-      message_type: 'text',
+      message_type: "text",
     });
   },
 
-  async sendSystemMessage(
-    householdId: UUID, 
-    content: string
-  ): Promise<ApiResponse<Message>> {
-    return apiClient.post<Message>(
-      `${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/system`,
-      { content }
-    );
+  async sendSystemMessage(householdId: UUID, content: string): Promise<ApiResponse<Message>> {
+    return apiClient.post<Message>(`${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/system`, { content });
   },
 
   // Message Reactions
-  async addReaction(
-    messageId: UUID, 
-    emoji: string
-  ): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>(
-      `${API_ENDPOINTS.MESSAGES.GET(messageId)}/reactions`,
-      { emoji }
-    );
+  async addReaction(messageId: UUID, emoji: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiClient.post<{ success: boolean }>(`${API_ENDPOINTS.MESSAGES.GET(messageId)}/reactions`, { emoji });
   },
 
-  async removeReaction(
-    messageId: UUID, 
-    emoji: string
-  ): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.delete<{ success: boolean }>(
-      `${API_ENDPOINTS.MESSAGES.GET(messageId)}/reactions/${emoji}`
-    );
+  async removeReaction(messageId: UUID, emoji: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiClient.delete<{ success: boolean }>(`${API_ENDPOINTS.MESSAGES.GET(messageId)}/reactions/${emoji}`);
   },
 
-  async getReactions(messageId: UUID): Promise<ApiResponse<Array<{
-    emoji: string;
-    count: number;
-    users: Array<{ id: UUID; name: string }>;
-  }>>> {
+  async getReactions(messageId: UUID): Promise<
+    ApiResponse<
+      Array<{
+        emoji: string;
+        count: number;
+        users: Array<{ id: UUID; name: string }>;
+      }>
+    >
+  > {
     return apiClient.get(`${API_ENDPOINTS.MESSAGES.GET(messageId)}/reactions`);
   },
 
@@ -116,7 +85,7 @@ export const chatApi = {
   ): Promise<ApiResponse<Message>> {
     return this.sendMessage(householdId, {
       content: question,
-      message_type: 'poll',
+      message_type: "poll",
       poll: {
         question,
         options,
@@ -126,14 +95,8 @@ export const chatApi = {
     });
   },
 
-  async voteOnPoll(
-    pollId: UUID, 
-    data: CreatePollVoteRequest
-  ): Promise<ApiResponse<PollVoteResponse>> {
-    return apiClient.post<PollVoteResponse>(
-      API_ENDPOINTS.POLLS.VOTE(pollId),
-      data
-    );
+  async voteOnPoll(pollId: UUID, data: CreatePollVoteRequest): Promise<ApiResponse<PollVoteResponse>> {
+    return apiClient.post<PollVoteResponse>(API_ENDPOINTS.POLLS.VOTE(pollId), data);
   },
 
   async getPollResults(pollId: UUID): Promise<ApiResponse<Poll>> {
@@ -141,50 +104,32 @@ export const chatApi = {
   },
 
   async closePoll(pollId: UUID): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>(
-      `${API_ENDPOINTS.POLLS.RESULTS(pollId)}/close`
-    );
+    return apiClient.post<{ success: boolean }>(`${API_ENDPOINTS.POLLS.RESULTS(pollId)}/close`);
   },
 
   // File Sharing
-  async uploadFile(
-    householdId: UUID,
-    file: File,
-    caption?: string
-  ): Promise<ApiResponse<Message>> {
+  async uploadFile(householdId: UUID, file: File, caption?: string): Promise<ApiResponse<Message>> {
     const formData = new FormData();
-    formData.append('file', file);
-    if (caption) formData.append('caption', caption);
-    
-    return apiClient.post<Message>(
-      `${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/upload`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    formData.append("file", file);
+    if (caption) formData.append("caption", caption);
+
+    return apiClient.post<Message>(`${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   },
 
-  async uploadImage(
-    householdId: UUID,
-    image: File,
-    caption?: string
-  ): Promise<ApiResponse<Message>> {
+  async uploadImage(householdId: UUID, image: File, caption?: string): Promise<ApiResponse<Message>> {
     const formData = new FormData();
-    formData.append('image', image);
-    if (caption) formData.append('caption', caption);
-    
-    return apiClient.post<Message>(
-      `${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/upload-image`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    formData.append("image", image);
+    if (caption) formData.append("caption", caption);
+
+    return apiClient.post<Message>(`${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/upload-image`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   },
 
   // Message Search
@@ -192,33 +137,26 @@ export const chatApi = {
     householdId: UUID,
     query: string,
     options?: {
-      type?: 'text' | 'poll' | 'system';
+      type?: "text" | "poll" | "system";
       user_id?: UUID;
       before?: string;
       after?: string;
       limit?: number;
     }
   ): Promise<ApiResponse<MessageListResponse>> {
-    return apiClient.get<MessageListResponse>(
-      `${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/search`,
-      { 
-        params: { 
-          q: query,
-          ...options 
-        } 
-      }
-    );
+    return apiClient.get<MessageListResponse>(`${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/search`, {
+      params: {
+        q: query,
+        ...options,
+      },
+    });
   },
 
   // Message Threading
-  async replyToMessage(
-    householdId: UUID,
-    messageId: UUID,
-    content: string
-  ): Promise<ApiResponse<Message>> {
+  async replyToMessage(householdId: UUID, messageId: UUID, content: string): Promise<ApiResponse<Message>> {
     return this.sendMessage(householdId, {
       content,
-      message_type: 'text',
+      message_type: "text",
       replied_to: messageId,
     });
   },
@@ -230,18 +168,17 @@ export const chatApi = {
   // Chat Statistics
   async getChatStats(
     householdId: UUID,
-    period?: 'day' | 'week' | 'month'
-  ): Promise<ApiResponse<{
-    total_messages: number;
-    active_users: number;
-    messages_by_user: Record<UUID, number>;
-    messages_by_day: Array<{ date: string; count: number }>;
-    popular_reactions: Array<{ emoji: string; count: number }>;
-  }>> {
-    return apiClient.get(
-      `${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/statistics`,
-      { params: { period } }
-    );
+    period?: "day" | "week" | "month"
+  ): Promise<
+    ApiResponse<{
+      total_messages: number;
+      active_users: number;
+      messages_by_user: Record<UUID, number>;
+      messages_by_day: Array<{ date: string; count: number }>;
+      popular_reactions: Array<{ emoji: string; count: number }>;
+    }>
+  > {
+    return apiClient.get(`${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/statistics`, { params: { period } });
   },
 
   // Message Export
@@ -250,24 +187,20 @@ export const chatApi = {
     options: {
       start_date?: string;
       end_date?: string;
-      format?: 'json' | 'txt' | 'pdf';
+      format?: "json" | "txt" | "pdf";
       include_media?: boolean;
     }
-  ): Promise<ApiResponse<{
-    export_url: string;
-    expires_at: string;
-  }>> {
-    return apiClient.post(
-      `${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/export`,
-      options
-    );
+  ): Promise<
+    ApiResponse<{
+      export_url: string;
+      expires_at: string;
+    }>
+  > {
+    return apiClient.post(`${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/export`, options);
   },
 
   // Typing Indicators (for real-time)
-  async sendTypingIndicator(
-    householdId: UUID,
-    isTyping: boolean = true
-  ): Promise<void> {
+  async sendTypingIndicator(householdId: UUID, isTyping: boolean = true): Promise<void> {
     // This would typically be handled via WebSocket
     // but included for completeness
     await apiClient.post(
@@ -278,32 +211,20 @@ export const chatApi = {
   },
 
   // Message Moderation
-  async flagMessage(
-    messageId: UUID,
-    reason: string
-  ): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>(
-      `${API_ENDPOINTS.MESSAGES.GET(messageId)}/flag`,
-      { reason }
-    );
+  async flagMessage(messageId: UUID, reason: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiClient.post<{ success: boolean }>(`${API_ENDPOINTS.MESSAGES.GET(messageId)}/flag`, { reason });
   },
 
   async pinMessage(messageId: UUID): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>(
-      `${API_ENDPOINTS.MESSAGES.GET(messageId)}/pin`
-    );
+    return apiClient.post<{ success: boolean }>(`${API_ENDPOINTS.MESSAGES.GET(messageId)}/pin`);
   },
 
   async unpinMessage(messageId: UUID): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.delete<{ success: boolean }>(
-      `${API_ENDPOINTS.MESSAGES.GET(messageId)}/pin`
-    );
+    return apiClient.delete<{ success: boolean }>(`${API_ENDPOINTS.MESSAGES.GET(messageId)}/pin`);
   },
 
   async getPinnedMessages(householdId: UUID): Promise<ApiResponse<Message[]>> {
-    return apiClient.get<Message[]>(
-      `${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/pinned`
-    );
+    return apiClient.get<Message[]>(`${API_ENDPOINTS.HOUSEHOLDS.MESSAGES(householdId)}/pinned`);
   },
 };
 

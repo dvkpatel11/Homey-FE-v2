@@ -1144,12 +1144,12 @@ This directory contains all TypeScript type definitions for the Homey household 
 
 ### Basic Import
 ```typescript
-import { UserProfile, Task, Bill, API_ENDPOINTS } from '@/lib/types';
+import { UserProfile, Task, Bill, API_ENDPOINTS } from '@/types';
 ```
 
 ### API Response Handling
 ```typescript
-import { ApiResponse, isApiSuccess, isApiError } from '@/lib/types';
+import { ApiResponse, isApiSuccess, isApiError } from '@/types';
 
 const response = await fetch('/api/households');
 const data = await response.json();
@@ -1165,7 +1165,7 @@ if (isApiSuccess<Household[]>(data)) {
 
 ### Endpoint Usage
 ```typescript
-import { API_ENDPOINTS } from '@/lib/types';
+import { API_ENDPOINTS } from '@/types';
 
 // Type-safe endpoint building
 const url = API_ENDPOINTS.HOUSEHOLDS.GET(householdId);
@@ -1174,7 +1174,7 @@ const tasksUrl = API_ENDPOINTS.HOUSEHOLDS.TASKS(householdId);
 
 ### Validation
 ```typescript
-import { validateCreateTask, validateEmail } from '@/lib/types';
+import { validateCreateTask, validateEmail } from '@/types';
 
 const taskData = { title: '', description: 'Test task' };
 const validation = validateCreateTask(taskData);
@@ -1194,7 +1194,7 @@ if (!validation.isValid) {
 ## Real-time Subscriptions
 
 ```typescript
-import { REALTIME_CHANNELS, RealtimePayload, Message } from '@/lib/types';
+import { REALTIME_CHANNELS, RealtimePayload, Message } from '@/types';
 
 const channel = supabase.channel(REALTIME_CHANNELS.CHAT(householdId));
 channel.on('postgres_changes', {
@@ -1253,7 +1253,7 @@ echo -e "   📄 $INDEX_FILE"
 echo -e "   📄 $README_FILE"
 echo ""
 echo -e "${BLUE}🔧 Usage:${NC}"
-echo -e "   Import: ${GREEN}import { UserProfile, API_ENDPOINTS } from '@/lib/types';${NC}"
+echo -e "   Import: ${GREEN}import { UserProfile, API_ENDPOINTS } from '@/types';${NC}"
 echo -e "   Script: ${GREEN}npm run generate:types${NC}"
 echo ""
 echo -e "${BLUE}🔄 Next Steps:${NC}"

@@ -3,22 +3,20 @@
  * Handles household management, members, settings, and dashboard data
  */
 
-import { apiClient } from './client';
-import { 
-  Household,
+import {
+  ApiResponse,
   CreateHouseholdRequest,
-  HouseholdListResponse,
-  HouseholdMember,
-  HouseholdMemberListResponse,
-  InviteCodeResponse,
-  RemoveMemberRequest,
-  LeaveHouseholdRequest,
-  HouseholdSettings,
   DashboardData,
+  Household,
+  HouseholdMember,
+  HouseholdSettings,
+  InviteCodeResponse,
+  LeaveHouseholdRequest,
+  RemoveMemberRequest,
   UUID,
-  ApiResponse
-} from '@/lib/types';
-import { API_ENDPOINTS } from '@/lib/types/endpoints';
+} from "@/types";
+import { API_ENDPOINTS } from "@/types/endpoints";
+import { apiClient } from "./client";
 
 export const householdApi = {
   // Household CRUD
@@ -48,17 +46,13 @@ export const householdApi = {
   },
 
   async removeMember(householdId: UUID, data: RemoveMemberRequest): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.delete<{ success: boolean }>(
-      API_ENDPOINTS.HOUSEHOLDS.REMOVE_MEMBER(householdId, data.user_id),
-      { data }
-    );
+    return apiClient.delete<{ success: boolean }>(API_ENDPOINTS.HOUSEHOLDS.REMOVE_MEMBER(householdId, data.user_id), {
+      data,
+    });
   },
 
   async leaveHousehold(householdId: UUID, data: LeaveHouseholdRequest): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>(
-      API_ENDPOINTS.HOUSEHOLDS.LEAVE(householdId),
-      data
-    );
+    return apiClient.post<{ success: boolean }>(API_ENDPOINTS.HOUSEHOLDS.LEAVE(householdId), data);
   },
 
   // Invite Management
@@ -67,7 +61,7 @@ export const householdApi = {
   },
 
   async joinHousehold(data: { invite_code: string }): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>('/api/households/join', data);
+    return apiClient.post<{ success: boolean }>("/api/households/join", data);
   },
 
   // Settings Management
@@ -76,13 +70,10 @@ export const householdApi = {
   },
 
   async updateSettings(
-    householdId: UUID, 
+    householdId: UUID,
     settings: Partial<HouseholdSettings>
   ): Promise<ApiResponse<HouseholdSettings>> {
-    return apiClient.put<HouseholdSettings>(
-      API_ENDPOINTS.HOUSEHOLDS.SETTINGS(householdId),
-      settings
-    );
+    return apiClient.put<HouseholdSettings>(API_ENDPOINTS.HOUSEHOLDS.SETTINGS(householdId), settings);
   },
 
   // Dashboard Data
@@ -92,48 +83,48 @@ export const householdApi = {
 
   // Bulk Operations
   async updateMemberRoles(
-    householdId: UUID, 
+    householdId: UUID,
     updates: Array<{ user_id: UUID; role: string }>
   ): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.patch<{ success: boolean }>(
-      `${API_ENDPOINTS.HOUSEHOLDS.MEMBERS(householdId)}/roles`,
-      { updates }
-    );
+    return apiClient.patch<{ success: boolean }>(`${API_ENDPOINTS.HOUSEHOLDS.MEMBERS(householdId)}/roles`, { updates });
   },
 
-  async transferOwnership(
-    householdId: UUID, 
-    newOwnerId: UUID
-  ): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>(
-      `${API_ENDPOINTS.HOUSEHOLDS.GET(householdId)}/transfer-ownership`,
-      { new_owner_id: newOwnerId }
-    );
+  async transferOwnership(householdId: UUID, newOwnerId: UUID): Promise<ApiResponse<{ success: boolean }>> {
+    return apiClient.post<{ success: boolean }>(`${API_ENDPOINTS.HOUSEHOLDS.GET(householdId)}/transfer-ownership`, {
+      new_owner_id: newOwnerId,
+    });
   },
 
   // Household Statistics
-  async getStatistics(householdId: UUID): Promise<ApiResponse<{
-    member_count: number;
-    task_completion_rate: number;
-    bill_payment_rate: number;
-    active_days: number;
-    created_at: string;
-  }>> {
+  async getStatistics(householdId: UUID): Promise<
+    ApiResponse<{
+      member_count: number;
+      task_completion_rate: number;
+      bill_payment_rate: number;
+      active_days: number;
+      created_at: string;
+    }>
+  > {
     return apiClient.get(`${API_ENDPOINTS.HOUSEHOLDS.GET(householdId)}/statistics`);
   },
 
   // Export Data
-  async exportData(householdId: UUID, format: 'json' | 'csv' = 'json'): Promise<ApiResponse<{
-    download_url: string;
-    expires_at: string;
-  }>> {
+  async exportData(
+    householdId: UUID,
+    format: "json" | "csv" = "json"
+  ): Promise<
+    ApiResponse<{
+      download_url: string;
+      expires_at: string;
+    }>
+  > {
     return apiClient.post(`${API_ENDPOINTS.HOUSEHOLDS.GET(householdId)}/export`, { format });
   },
 
   // Search Households (for admin or future features)
   async searchHouseholds(query: string, limit: number = 20): Promise<ApiResponse<Household[]>> {
-    return apiClient.get<Household[]>('/api/households/search', {
-      params: { q: query, limit }
+    return apiClient.get<Household[]>("/api/households/search", {
+      params: { q: query, limit },
     });
   },
 };
