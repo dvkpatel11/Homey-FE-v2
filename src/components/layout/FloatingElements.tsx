@@ -1,35 +1,48 @@
 import { motion } from "framer-motion";
-import { 
-  Home, 
-  Lightbulb, 
-  Coffee, 
-  Sofa, 
-  Tv, 
-  Refrigerator, 
-  Microwave, 
-  Bed, 
-  Bath, 
-  Car, 
-  TreePine, 
-  Flower,
-  Lamp,
+import {
+  Bath,
+  Bed,
+  Car,
   Clock,
+  Coffee,
+  Flower,
+  Home,
+  Lamp,
+  Laptop,
+  Lightbulb,
+  Microwave,
   Phone,
-  Laptop
+  Refrigerator,
+  Sofa,
+  TreePine,
+  Tv,
 } from "lucide-react";
 
 const FloatingElements = () => {
   // Household icons to float around
   const householdIcons = [
-    Home, Lightbulb, Coffee, Sofa, Tv, Refrigerator, 
-    Microwave, Bed, Bath, Car, TreePine, Flower,
-    Lamp, Clock, Phone, Laptop
+    Home,
+    Lightbulb,
+    Coffee,
+    Sofa,
+    Tv,
+    Refrigerator,
+    Microwave,
+    Bed,
+    Bath,
+    Car,
+    TreePine,
+    Flower,
+    Lamp,
+    Clock,
+    Phone,
+    Laptop,
   ];
 
   // Generate floating elements with household items
   const elements = Array.from({ length: 16 }, (_, i) => {
     const IconComponent = householdIcons[i % householdIcons.length];
-    
+
     return {
       id: i,
       icon: IconComponent,
@@ -58,34 +71,13 @@ const FloatingElements = () => {
   };
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-10">
       {/* EPIC Multi-layered Gradient Background */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 50% at 20% 0%, var(--homey-primary)20 0%, transparent 50%),
-            radial-gradient(ellipse 60% 50% at 80% 100%, var(--homey-primary)15 0%, transparent 50%),
-            radial-gradient(ellipse 100% 80% at 40% 50%, var(--homey-primary)08 0%, transparent 60%),
-            linear-gradient(135deg, var(--homey-bg) 0%, color-mix(in srgb, var(--homey-bg) 80%, var(--homey-primary) 20%) 25%, var(--homey-bg) 50%, color-mix(in srgb, var(--homey-bg) 90%, var(--homey-primary) 10%) 75%, var(--homey-bg) 100%)
-          `
-        }}
-      />
+      <div className="absolute inset-0" />
 
       {/* Animated gradient waves */}
       <motion.div
         className="absolute inset-0"
-        style={{
-          background: `
-            linear-gradient(45deg, 
-              transparent 0%, 
-              var(--homey-primary)05 25%, 
-              transparent 50%, 
-              var(--homey-primary)03 75%, 
-              transparent 100%
-            )
-          `,
-        }}
         animate={{
           backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
         }}
@@ -183,12 +175,7 @@ const FloatingElements = () => {
             }}
             animate={{
               y: [-50, window.innerHeight + 50],
-              x: [
-                0,
-                Math.random() * 100 - 50,
-                Math.random() * 60 - 30,
-                0
-              ],
+              x: [0, Math.random() * 100 - 50, Math.random() * 60 - 30, 0],
               opacity: [0, 1, 0.8, 0.9, 0],
               scale: [0.5, 1.5, 1, 1.2, 0.5],
             }}
@@ -201,25 +188,6 @@ const FloatingElements = () => {
           />
         ))}
       </div>
-
-      {/* Ambient light beams */}
-      <motion.div
-        className="absolute top-0 left-1/4 w-2 h-full origin-top"
-        style={{
-          background: `linear-gradient(to bottom, var(--homey-primary)30, transparent)`,
-          filter: "blur(3px)",
-          transform: "rotate(15deg)",
-        }}
-        animate={{
-          opacity: [0.2, 0.6, 0.3, 0.5, 0.2],
-          scaleX: [0.5, 1.2, 0.8, 1, 0.5],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
 
       <motion.div
         className="absolute top-0 right-1/3 w-2 h-full origin-top"
@@ -269,23 +237,6 @@ const FloatingElements = () => {
         transition={{
           duration: 14,
           delay: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-
-      {/* Subtle top and bottom edge glows */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 h-1"
-        style={{
-          background: `linear-gradient(90deg, transparent 0%, var(--homey-primary)60 50%, transparent 100%)`,
-          filter: "blur(2px)",
-        }}
-        animate={{
-          opacity: [0.4, 1, 0.6, 0.8, 0.4],
-        }}
-        transition={{
-          duration: 6,
           repeat: Infinity,
           ease: "easeInOut",
         }}

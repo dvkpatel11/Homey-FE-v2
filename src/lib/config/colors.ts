@@ -108,7 +108,7 @@ export const LIGHT_THEME_COLORS: ThemeColors = {
   text: "#1e293b", // Dark text for light background
   textSecondary: "#334155",
   textMuted: "#475569",
-  background: "#f5f5dc", // Beige background
+  background: "#f5f5dc",
 };
 
 export const DARK_THEME_COLORS: ThemeColors = {
@@ -146,7 +146,7 @@ export const generateCSSVars = (theme: ThemeColors): CSSVariables => {
     "--color-error": "#ef4444",
     "--color-info": "#3b82f6",
     "--color-cancel": "#6b7280",
-    
+
     // Dynamic surface colors
     "--surface-1": theme.text === "#ffffff" ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
     "--surface-2": theme.text === "#ffffff" ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",

@@ -12,7 +12,7 @@ const FloatingActionButton = forwardRef<HTMLButtonElement, FloatingActionButtonP
         className={`
           fixed bottom-24 sm:bottom-32 right-4 sm:right-6 z-30
           w-14 h-14 sm:w-16 sm:h-16
-          bg-gradient-to-r from-primary to-primary-bright
+          bg-primary-dark
           rounded-full shadow-glass-lg
           flex items-center justify-center
           text-white

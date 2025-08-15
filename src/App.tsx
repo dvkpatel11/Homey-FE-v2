@@ -5,7 +5,8 @@ import { ErrorBoundary } from "react-error-boundary";
 import { Toaster } from "react-hot-toast";
 import { DARK_THEME_COLORS, generateCSSVars, LIGHT_THEME_COLORS } from "./lib/config/colors";
 
-import UIPreview from "./components/UiPrev";
+import FloatingElements from "./components/layout/FloatingElements";
+import { default as Dashboard } from "./components/UiPrev";
 import "./index.css";
 
 // Create QueryClient instance
@@ -127,14 +128,12 @@ const App: React.FC = () => {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div>
         {/* Floating background elements */}
+        <FloatingElements />
         <QueryClientProvider client={queryClient}>
           {/* <DemoContent /> */}
-          <UI.GlassButton onClick={toggleTheme} className="fixed top-4 right-4 z-50">
-            {isDark ? "☀️" : "🌙"}
-          </UI.GlassButton>
-          <AppLoader />
-          <PageLoader />
-          <UIPreview isDark={isDark} />
+          {/* <AppLoader />
+          <PageLoader /> */}
+          <Dashboard isDark={isDark} toggleTheme={toggleTheme} />
           {/* Enhanced Toast Notifications with preserved styling */}
           <Toaster
             position="top-center"
