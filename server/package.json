@@ -1,0 +1,23 @@
+{
+  "name": "homey-mock-server",
+  "version": "1.0.0",
+  "description": "Mock server for Homey app development",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "reset": "node src/utils/resetData.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "helmet": "^7.1.0",
+    "uuid": "^9.0.1",
+    "date-fns": "^3.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
