@@ -1,14 +1,10 @@
-// Global type definitions
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+/**
+ * Homey Types - Main Export
+ * Clean imports for all API types and endpoints
+ */
 
-// UI Component Props
-export interface BaseProps {
-  className?: string;
-  children?: React.ReactNode;
-}
+// Export all types
+export * from "./api";
 
-// Add more types as needed
+// Export endpoints
+export * from "./endpoints";
