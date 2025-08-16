@@ -2,7 +2,7 @@
  * useTasks - Task management with assignments, swaps, and real-time updates
  * Handles task operations, completion tracking, and collaborative features
  */
-
+import { useRealtime } from '@/contexts/RealtimeContext';
 import { supabase, useAuth } from "@/contexts/AuthContext";
 import { useHousehold } from "@/contexts/HouseholdContext";
 import { tasksApi } from "@/lib/api";
@@ -58,6 +58,7 @@ export interface TaskActions {
 }
 
 export const useTasks = () => {
+  const { subscribeToHousehold, subscribeToUser } = useRealtime(); // ← USE CONTEXT
   const { currentHousehold } = useHousehold();
   const { user } = useAuth();
   const { lightImpact, success } = useMobile().hapticFeedback || {
@@ -455,16 +456,9 @@ export const useTasks = () => {
     if (!currentHousehold) return () => {};
 
     const channel = supabase
-      .channel(`tasks:${currentHousehold.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tasks",
-          filter: `household_id=eq.${currentHousehold.id}`,
-        },
-        (payload) => {
+          const unsubscribeTasks = subscribeToHousehold('*', 'tasks', (payload) => {
+
+ {
           const { eventType, new: newRecord, old: oldRecord } = payload;
 
           setState((prev) => {

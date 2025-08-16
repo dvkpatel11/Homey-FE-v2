@@ -7,29 +7,11 @@
 export * from "./form";
 
 // Utility hooks
-export { useDebounce, useDebouncedCallback, useDebounceState } from "./useDebounce";
-export {
-  useLocalStorage,
-  useLocalStorageArray,
-  useLocalStorageBoolean,
-  useLocalStorageObject,
-} from "./useLocalStorage";
+export { useDebounce, useDebouncedValidation } from "./useDebounce";
+export { useLocalStorage, useLocalStorageSync } from "./useLocalStorage";
 
 // Core feature hooks
 export { useChat } from "./useChat";
 export { useBillSplitting, useExpenses } from "./useExpenses";
 export { useHouseholdRealtime, useRealtime, useUserRealtime } from "./useRealtime";
 export { useTaskCompletion, useTasks } from "./useTasks";
-
-// Type exports for external use
-export type {
-  ChatActions,
-  ChatState,
-  ExpenseActions,
-  ExpenseState,
-  RealtimeActions,
-  RealtimeStatus,
-  RealtimeSubscription,
-  TaskActions,
-  TaskState,
-} from "./useChat";

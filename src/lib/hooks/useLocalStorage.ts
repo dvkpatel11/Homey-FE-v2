@@ -1,7 +1,15 @@
 // src/lib/hooks/useLocalStorage.ts
 import { useCallback, useEffect, useState } from "react";
 
-// Basic localStorage hook
+// src/lib/constants/storage.ts
+export const STORAGE_KEYS = {
+  AUTH_TOKEN: "homey_access_token",
+  REFRESH_TOKEN: "homey_refresh_token",
+  USER: "homey_user",
+  THEME: "homey-theme",
+  CURRENT_HOUSEHOLD: "homey_current_household",
+} as const;
+
 export function useLocalStorage<T>(
   key: string | null,
   initialValue: T
@@ -66,63 +74,6 @@ export function useLocalStorage<T>(
   }, [key]);
 
   return [storedValue, setValue, removeValue, hasValue];
-}
-
-// Form persistence hook (alias for your existing code)
-export function useFormPersistence<T>(
-  key: string | null,
-  initialValue: T
-): [T, (value: T) => void, () => void, () => boolean] {
-  return useLocalStorage(key, initialValue);
-}
-
-// Multi-step form data hook
-export function useMultiStepData(storageKey: string | null) {
-  const [stepData, setStepData, clearStepData, hasStepData] = useLocalStorage<Record<string | number, any>>(
-    storageKey,
-    {}
-  );
-
-  const updateStep = useCallback(
-    (step: string | number, data: any) => {
-      setStepData((prev: any) => ({
-        ...prev,
-        [step]: data,
-      }));
-    },
-    [setStepData]
-  );
-
-  const getStep = useCallback(
-    (step: string | number) => {
-      return stepData[step];
-    },
-    [stepData]
-  );
-
-  const clearAllSteps = useCallback(() => {
-    clearStepData();
-  }, [clearStepData]);
-
-  const removeStep = useCallback(
-    (step: string | number) => {
-      setStepData((prev: any) => {
-        const newData = { ...prev };
-        delete newData[step];
-        return newData;
-      });
-    },
-    [setStepData]
-  );
-
-  return {
-    stepData,
-    updateStep,
-    getStep,
-    clearAllSteps,
-    removeStep,
-    hasStepData,
-  };
 }
 
 // SSR-safe localStorage hook with sync

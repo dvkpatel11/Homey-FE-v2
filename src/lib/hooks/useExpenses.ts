@@ -2,9 +2,9 @@
  * useExpenses - Bill and expense management
  * Handles bills, payments, splits, and balance calculations with real-time updates
  */
-
-import { supabase, useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useHousehold } from "@/contexts/HouseholdContext";
+import { useRealtime } from "@/contexts/RealtimeContext";
 import { billsApi } from "@/lib/api";
 import {
   Bill,
@@ -105,6 +105,7 @@ export const useBillSplitting = () => {
 export const useExpenses = () => {
   const { currentHousehold } = useHousehold();
   const { user } = useAuth();
+  const { subscribeToHousehold } = useRealtime();
   const { lightImpact } = useMobile().hapticFeedback || { lightImpact: () => {} };
 
   const [state, setState] = useState<ExpenseState>({
@@ -382,71 +383,23 @@ export const useExpenses = () => {
     }
   };
 
-  const subscribeToExpenseUpdates = (): (() => void) => {
+  const subscribeToExpenseUpdates = useCallback((): (() => void) => {
     if (!currentHousehold) return () => {};
 
-    const channel = supabase
-      .channel(`expenses:${currentHousehold.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bills",
-          filter: `household_id=eq.${currentHousehold.id}`,
-        },
-        (payload) => {
-          const { eventType, new: newRecord, old: oldRecord } = payload;
+    const unsubscribeBills = subscribeToHousehold("*", "bills", (payload) => {
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+      // Handle bill updates...
+    });
 
-          setState((prev) => {
-            let newBills = [...prev.bills];
-
-            switch (eventType) {
-              case "INSERT":
-                // Avoid duplicates (in case user created it)
-                if (!newBills.find((bill) => bill.id === newRecord.id)) {
-                  newBills = [newRecord as Bill, ...newBills];
-                }
-                break;
-              case "UPDATE":
-                newBills = newBills.map((bill) => (bill.id === newRecord.id ? (newRecord as Bill) : bill));
-                break;
-              case "DELETE":
-                newBills = newBills.filter((bill) => bill.id !== oldRecord.id);
-                break;
-            }
-
-            return { ...prev, bills: newBills };
-          });
-
-          // Show notification for bill updates from other users
-          if (newRecord && newRecord.created_by !== user?.id) {
-            if (payload.eventType === "INSERT") {
-              toast(`New bill: ${newRecord.title}`, { icon: "💰" });
-            } else if (payload.eventType === "UPDATE") {
-              toast(`Bill updated: ${newRecord.title}`, { icon: "📝" });
-            }
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bill_splits",
-        },
-        () => {
-          // Refresh balances when payments are made
-          loadBalances();
-        }
-      )
-      .subscribe();
+    const unsubscribeSplits = subscribeToHousehold("*", "bill_splits", () => {
+      loadBalances(); // Refresh balances on payment changes
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribeBills();
+      unsubscribeSplits();
     };
-  };
+  }, [currentHousehold?.id, subscribeToHousehold]);
 
   const actions: ExpenseActions = {
     loadBills,

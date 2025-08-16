@@ -1,4 +1,5 @@
 import { DARK_THEME_COLORS, generateCSSVars, LIGHT_THEME_COLORS } from "@/lib/config/colors";
+import { STORAGE_KEYS } from "@/lib/hooks/useLocalStorage";
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark" | "system";
@@ -8,6 +9,7 @@ interface ThemeContextType {
   resolvedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  isDark: boolean; // Add this convenience property
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -24,7 +26,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, defaultT
     return stored || defaultTheme;
   });
 
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => {
+    // Initialize with correct theme immediately
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("homey-theme") as Theme;
+      const currentTheme = stored || defaultTheme;
+
+      if (currentTheme === "system") {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      return currentTheme;
+    }
+    return "dark";
+  });
 
   // Resolve theme (handle 'system' preference)
   useEffect(() => {
@@ -82,7 +96,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, defaultT
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("homey-theme", newTheme);
+    localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
   };
 
   const toggleTheme = () => {
@@ -94,6 +108,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, defaultT
     resolvedTheme,
     setTheme,
     toggleTheme,
+    isDark: resolvedTheme === "dark", // Add convenience property
   };
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

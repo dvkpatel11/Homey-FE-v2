@@ -20,6 +20,14 @@ export type DecimalString = string; // Decimal values as strings for precision
 // ============================================================================
 // Enums (Frontend-managed)
 // ============================================================================
+export enum Currency {
+  USD = "USD",
+  EUR = "EUR",
+  GBP = "GBP",
+  CAD = "CAD",
+  AUD = "AUD",
+  JPY = "JPY",
+}
 
 export enum UserRole {
   ADMIN = "admin",
@@ -89,6 +97,15 @@ export enum DevicePlatform {
   ANDROID = "android",
   WEB = "web",
 }
+
+export type CalendarEventType = "bill" | "task";
+export type ActivityItemType =
+  | "task_created"
+  | "task_completed"
+  | "bill_added"
+  | "bill_paid"
+  | "member_joined"
+  | "member_left";
 
 // ============================================================================
 // Base Models & Common Patterns
@@ -236,7 +253,7 @@ export interface LeaveHouseholdRequest {
 }
 
 export interface HouseholdSettings {
-  default_currency: string; // default "USD"
+  default_currency: Currency; // default "USD"
   task_reminder_days: number; // default 1, range 0-7
   bill_reminder_days: number; // default 3, range 0-30
   auto_assign_tasks: boolean; // default false
@@ -258,14 +275,14 @@ export interface CalendarEvent {
   id: UUID;
   title: string;
   date: ISODate;
-  type: string; // 'bill' or 'task'
+  type: CalendarEventType; // 'bill' or 'task'
   amount?: DecimalString;
   assigned_to?: string;
 }
 
 export interface ActivityItem {
   id: UUID;
-  type: string;
+  type: ActivityItemType;
   message: string;
   timestamp: ISODateTime;
   user: {
@@ -311,7 +328,7 @@ export interface TaskBase {
   is_recurring: boolean;
   recurrence_pattern?: RecurrencePattern;
   recurrence_interval?: number; // range 1-365
-  category?: string;
+  category?: TaskCategory;
 }
 
 export interface CreateTaskRequest extends TaskBase {
@@ -362,9 +379,9 @@ export interface TaskSwapWithDetails {
 }
 
 export interface TaskFilterParams {
-  status?: string;
+  status?: TaskStatus;
   assigned_to?: UUID;
-  category?: string;
+  category?: TaskCategory;
   due_after?: ISODateTime;
   due_before?: ISODateTime;
 }
@@ -390,12 +407,12 @@ export interface BillBase {
   title: string;
   description?: string;
   total_amount: DecimalString;
-  currency: string; // default "USD"
+  currency: Currency; // default "USD"
   due_date: ISODate;
   paid_date?: ISODate;
   is_recurring: boolean;
   recurrence_pattern?: RecurrencePattern;
-  category?: string;
+  category?: BillCategory;
 }
 
 export interface CreateBillRequest extends BillBase {
@@ -455,9 +472,9 @@ export interface PaymentResponse {
 }
 
 export interface BillFilterParams {
-  status?: string;
+  status?: BillStatus;
   paid_by?: UUID;
-  category?: string;
+  category?: BillCategory;
   amount_min?: DecimalString;
   amount_max?: DecimalString;
 }
@@ -487,7 +504,7 @@ export interface Poll {
 
 export interface PollCreate {
   question: string;
-  options: string[]; // min 2, max 10
+  options: [string, string, ...string[]]; // min 2, max 10
   multiple_choice: boolean;
   expires_at?: ISODateTime;
 }
@@ -529,6 +546,8 @@ export interface PollVoteResponse {
 // Notification Models
 // ============================================================================
 
+export type RelatedTable = "tasks" | "bills" | "task_swaps" | "messages" | "households";
+
 export interface Notification extends TimestampMixin {
   id: UUID;
   user_id: UUID;
@@ -537,7 +556,7 @@ export interface Notification extends TimestampMixin {
   message: string;
   type: NotificationType;
   related_id?: UUID;
-  related_table?: string;
+  related_table?: RelatedTable;
   read_at?: ISODateTime;
 }
 
@@ -558,7 +577,7 @@ export interface ReadAllNotificationsResponse {
 export interface DeviceToken {
   user_id: UUID;
   token: string;
-  platform: string; // DevicePlatform enum values
+  platform: DevicePlatform; // DevicePlatform enum values
   active: boolean;
 }
 

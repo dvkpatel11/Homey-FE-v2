@@ -1,9 +1,8 @@
 import * as UI from "@/components/ui/index";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ErrorBoundary } from "react-error-boundary";
 import { Toaster } from "react-hot-toast";
-import { DARK_THEME_COLORS, generateCSSVars, LIGHT_THEME_COLORS } from "./lib/config/colors";
 
 import TasksPage from "./components/EntityPage";
 import FloatingElements from "./components/layout/FloatingElements";
@@ -12,19 +11,24 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { HouseholdProvider } from "./contexts/HouseholdContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { RealtimeProvider } from "./contexts/RealtimeContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import "./index.css";
 
-// Create QueryClient instance
+// Create QueryClient instance with optimized settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: (failureCount, error: any) => {
-        // Don't retry on auth errors
-        if (error?.status === 401) return false;
+        // Don't retry on auth errors or client errors
+        if (error?.status === 401 || error?.status === 403) return false;
+        if (error?.status >= 400 && error?.status < 500) return false;
         return failureCount < 2;
       },
+      refetchOnWindowFocus: false, // Disable for better UX
+    },
+    mutations: {
+      retry: 1,
     },
   },
 });
@@ -82,11 +86,81 @@ const AppLoader = () => {
       </UI.GlassCard>
       <div className="text-center">
         <UI.GlassHeading level={3} className="mb-2">
-          Welcome to Your App
+          Welcome to Homey
         </UI.GlassHeading>
         <UI.GlassText className="text-sm opacity-70">Loading...</UI.GlassText>
       </div>
     </div>
+  );
+};
+
+// Toast configuration component - uses theme context
+const ToastConfiguration = () => {
+  const { isDark } = useTheme();
+
+  return (
+    <Toaster
+      position="top-center"
+      containerClassName="safe-area-top"
+      toastOptions={{
+        duration: 4000,
+        style: {
+          background: "var(--homey-glass-bg)",
+          backdropFilter: "blur(16px)",
+          border: "1px solid var(--homey-glass-border)",
+          color: "var(--homey-text)",
+          borderRadius: "1rem",
+          padding: "12px 16px",
+          fontSize: "14px",
+          fontWeight: "500",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.25)",
+          maxWidth: "calc(100vw - 32px)",
+        },
+        success: {
+          style: {
+            borderColor: "rgba(16, 185, 129, 0.3)",
+            background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), var(--homey-glass-bg))",
+          },
+          iconTheme: {
+            primary: "#10b981",
+            secondary: "#fff",
+          },
+        },
+        error: {
+          style: {
+            borderColor: "rgba(239, 68, 68, 0.3)",
+            background: "linear-gradient(135deg, rgba(239, 68, 68, 0.1), var(--homey-glass-bg))",
+          },
+          iconTheme: {
+            primary: "#ef4444",
+            secondary: "#fff",
+          },
+        },
+        loading: {
+          style: {
+            borderColor: "var(--homey-glass-violet)",
+            background: "linear-gradient(135deg, var(--homey-glass-violet), var(--homey-glass-bg))",
+          },
+        },
+      }}
+    />
+  );
+};
+
+// Main App content - separated for cleaner code
+const AppContent = () => {
+  const { isDark, toggleTheme } = useTheme();
+
+  return (
+    <>
+      <FloatingElements />
+      {/* Your app content */}
+      <TasksPage isDark={isDark} />
+      <Dashboard isDark={isDark} toggleTheme={toggleTheme} />
+
+      {/* Toast notifications */}
+      <ToastConfiguration />
+    </>
   );
 };
 
@@ -96,109 +170,32 @@ const App: React.FC = () => {
 
   // Mock auth state for development
   // const isLoggedIn = true;
-  const [isDark, setIsDark] = useState(false);
+  // const [isDark, setIsDark] = useState(false);
   // const { isDark } = useTheme();
-
-  const applyTheme = useCallback((darkMode: boolean) => {
-    const theme = darkMode ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
-    const cssVars = generateCSSVars(theme);
-
-    Object.entries(cssVars).forEach(([property, value]) => {
-      document.documentElement.style.setProperty(property, value);
-    });
-
-    document.documentElement.classList.toggle("dark", darkMode);
-  }, []);
-
-  useEffect(() => {
-    const initializeTheme = () => {
-      const savedTheme = localStorage.getItem("theme");
-      const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const shouldBeDark = savedTheme ? savedTheme === "dark" : systemPrefersDark;
-
-      setIsDark(shouldBeDark);
-      applyTheme(shouldBeDark);
-    };
-
-    initializeTheme();
-  }, [applyTheme]);
-
-  const toggleTheme = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-    applyTheme(newTheme);
-    localStorage.setItem("theme", newTheme ? "dark" : "light");
-  };
-
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div>
-        {/* Floating background elements */}
-        <FloatingElements />
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider defaultTheme="system">
-            <AuthProvider>
-              <HouseholdProvider>
-                <RealtimeProvider>
-                  <NotificationProvider>
-                    {/* <AppLoader /> <PageLoader /> */}
-                    {/* <AppRouter /> */}
+    <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onError={(error, errorInfo) => {
+        // Log to error reporting service in production
+        console.error("App Error:", error, errorInfo);
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="system">
+          <AuthProvider>
+            <HouseholdProvider>
+              <RealtimeProvider>
+                <NotificationProvider>
+                  <AppContent />
+                </NotificationProvider>
+              </RealtimeProvider>
+            </HouseholdProvider>
+          </AuthProvider>
+        </ThemeProvider>
 
-                    <TasksPage isDark={isDark} />
-                    <Dashboard isDark={isDark} toggleTheme={toggleTheme} />
-                    {/* Enhanced Toast Notifications with preserved styling */}
-                    <Toaster
-                      position="top-center"
-                      containerClassName="safe-area-top"
-                      toastOptions={{
-                        duration: 4000,
-                        style: {
-                          background: "var(--homey-glass-bg)",
-                          backdropFilter: "blur(16px)",
-                          border: "1px solid var(--homey-glass-border)",
-                          color: "var(--homey-text)",
-                          borderRadius: "1rem",
-                          padding: "12px 16px",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.25)",
-                          maxWidth: "calc(100vw - 32px)",
-                        },
-                        success: {
-                          style: {
-                            borderColor: "rgba(16, 185, 129, 0.3)",
-                            background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), var(--homey-glass-bg))",
-                          },
-                          iconTheme: {
-                            primary: "#10b981",
-                            secondary: "#fff",
-                          },
-                        },
-                        error: {
-                          style: {
-                            borderColor: "rgba(239, 68, 68, 0.3)",
-                            background: "linear-gradient(135deg, rgba(239, 68, 68, 0.1), var(--homey-glass-bg))",
-                          },
-                          iconTheme: {
-                            primary: "#ef4444",
-                            secondary: "#fff",
-                          },
-                        },
-                        loading: {
-                          style: {
-                            borderColor: "var(--homey-glass-violet)",
-                            background: "linear-gradient(135deg, var(--homey-glass-violet), var(--homey-glass-bg))",
-                          },
-                        },
-                      }}
-                    />
-                  </NotificationProvider>
-                </RealtimeProvider>
-              </HouseholdProvider>
-            </AuthProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
-      </div>
+        {/* React Query Devtools - only in development */}
+        {/* {process.env.NODE_ENV === "development" && <ReactQueryDevtools />} */}
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };
