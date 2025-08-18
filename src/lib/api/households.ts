@@ -61,7 +61,11 @@ export const householdApi = {
   },
 
   async joinHousehold(data: { invite_code: string }): Promise<ApiResponse<{ success: boolean }>> {
-    return apiClient.post<{ success: boolean }>("/api/households/join", data);
+    return apiClient.post<{ success: boolean }>(API_ENDPOINTS.AUTH.JOIN, data);
+  },
+
+  async validateInviteCode(data: { invite_code: string }): Promise<ApiResponse<{ valid: boolean; household: any }>> {
+    return apiClient.post<{ valid: boolean; household: any }>(API_ENDPOINTS.AUTH.VALIDATE, data);
   },
 
   // Settings Management

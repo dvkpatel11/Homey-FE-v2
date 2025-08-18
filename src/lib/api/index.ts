@@ -9,10 +9,10 @@ export type { RequestConfig } from "./client";
 
 // Export individual API modules
 export { default as authApi } from "./auth";
-export { default as billsApi } from "./bills";
+export { default as billsApi } from "./expenses";
 export { default as chatApi } from "./chat";
-export { default as householdApi } from "./households";
-export { default as notificationApi } from "./notifications";
+// export { default as householdApi } from "./households";
+// export { default as notificationApi } from "./notifications";
 export { default as tasksApi } from "./tasks";
 
 // Export configuration

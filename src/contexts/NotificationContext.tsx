@@ -436,6 +436,7 @@
  * Integrated with mock server and proper context dependencies
  */
 
+import notificationApi from "@/lib/api/notifications";
 import {
   DevicePlatform,
   DeviceToken,
@@ -446,7 +447,6 @@ import {
   isApiError,
   isApiSuccess,
 } from "@/types/api";
-import { API_ENDPOINTS } from "@/types/endpoints";
 import React, { ReactNode, createContext, useCallback, useContext, useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
 import { useAuth, useAuthenticatedRequest } from "./AuthContext";
@@ -572,93 +572,6 @@ interface NotificationContextType extends NotificationState {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-// API client for notification operations
-class NotificationApiClient {
-  constructor(private authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>) {}
-
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const baseURL =
-      process.env.NODE_ENV === "development" ? "http://localhost:8000" : process.env.REACT_APP_API_URL || "";
-
-    const response = await this.authenticatedFetch(`${baseURL}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        error: { message: "Network error", code: "NETWORK_ERROR" },
-      }));
-      throw new Error(errorData.error?.message || "Request failed");
-    }
-
-    return response.json();
-  }
-
-  async getNotifications(params?: NotificationQueryParams) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          searchParams.append(key, String(value));
-        }
-      });
-    }
-
-    const query = searchParams.toString();
-    const endpoint = query ? `${API_ENDPOINTS.NOTIFICATIONS.LIST}?${query}` : API_ENDPOINTS.NOTIFICATIONS.LIST;
-
-    return this.request(endpoint);
-  }
-
-  async markAsRead(notificationId: string) {
-    return this.request(API_ENDPOINTS.NOTIFICATIONS.READ(notificationId), {
-      method: "PUT",
-    });
-  }
-
-  async markAllAsRead() {
-    return this.request(API_ENDPOINTS.NOTIFICATIONS.READ_ALL, {
-      method: "PUT",
-    });
-  }
-
-  async deleteNotification(notificationId: string) {
-    return this.request(API_ENDPOINTS.NOTIFICATIONS.DELETE(notificationId), {
-      method: "DELETE",
-    });
-  }
-
-  async deleteAllRead() {
-    return this.request(`${API_ENDPOINTS.NOTIFICATIONS.LIST}/read`, {
-      method: "DELETE",
-    });
-  }
-
-  async registerDevice(deviceToken: DeviceToken) {
-    return this.request(API_ENDPOINTS.NOTIFICATIONS.DEVICE, {
-      method: "POST",
-      body: JSON.stringify(deviceToken),
-    });
-  }
-
-  async unregisterDevice(token: string) {
-    return this.request(API_ENDPOINTS.NOTIFICATIONS.REMOVE_DEVICE(token), {
-      method: "DELETE",
-    });
-  }
-
-  async sendTestNotification(platform: string) {
-    return this.request(`${API_ENDPOINTS.NOTIFICATIONS.LIST}/test`, {
-      method: "POST",
-      body: JSON.stringify({ platform }),
-    });
-  }
-}
-
 interface NotificationProviderProps {
   children: ReactNode;
 }
@@ -678,8 +591,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     lastRefresh: null,
     error: null,
   });
-
-  const notificationApi = new NotificationApiClient(authenticatedFetch);
 
   // Load notifications when user or household changes
   useEffect(() => {
@@ -768,9 +679,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           unreadCount: meta.unread_count || 0,
         });
         dispatch({ type: "SET_LAST_REFRESH", timestamp: Date.now() });
-      } else if (isApiError(response)) {
-        dispatch({ type: "SET_ERROR", error: response.error.message });
-        toast.error(response.error.message);
+      } else {
+        // Handle as error without type guard
+        const errorMessage = (response as any)?.error?.message || "Request failed";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to load notifications";
@@ -794,11 +707,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       const response = await notificationApi.markAsRead(notificationId);
 
       if (!isApiSuccess(response)) {
-        // Revert optimistic update
         await loadNotifications();
-        if (isApiError(response)) {
-          toast.error(response.error.message);
-        }
+        const errorMessage = (response as any)?.error?.message || "Operation failed";
+        toast.error(errorMessage);
       }
     } catch (error) {
       // Revert optimistic update
@@ -819,9 +730,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       } else {
         // Revert optimistic update
         await loadNotifications();
-        if (isApiError(response)) {
-          toast.error(response.error.message);
-        }
+        const errorMessage = (response as any)?.error?.message || "Operation failed";
+        toast.error(errorMessage);
       }
     } catch (error) {
       // Revert optimistic update
@@ -869,9 +779,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       } else {
         // Revert optimistic update
         await loadNotifications();
-        if (isApiError(response)) {
-          toast.error(response.error.message);
-        }
+        const errorMessage = (response as any)?.error?.message || "Operation failed";
+        toast.error(errorMessage);
       }
     } catch (error) {
       // Revert optimistic update
@@ -942,8 +851,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         dispatch({ type: "SET_DEVICE_TOKEN_REGISTERED", registered: true });
         toast.success("Device registered for push notifications");
         return true;
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Operation failed";
+        toast.error(errorMessage);
       }
 
       return false;

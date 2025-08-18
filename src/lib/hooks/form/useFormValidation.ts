@@ -167,7 +167,7 @@ export const validationRules = {
   }),
 
   max: (max: number, message?: string): ValidationRule<number> => ({
-    validate: (value: number | ) => {
+    validate: (value: number | "") => {
       if (value === null || value === undefined || value === "") return true;
       return Number(value) <= max;
     },

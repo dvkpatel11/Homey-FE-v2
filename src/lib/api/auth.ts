@@ -58,11 +58,11 @@ export const authApi = {
 
   // Invitation System
   async validateInvite(data: InviteValidationRequest): Promise<ApiResponse<InviteValidationResponse>> {
-    return apiClient.post<InviteValidationResponse>(API_ENDPOINTS.INVITE.VALIDATE, data, { skipAuth: true });
+    return apiClient.post<InviteValidationResponse>(API_ENDPOINTS.AUTH.VALIDATE, data, { skipAuth: true });
   },
 
   async joinHousehold(data: JoinHouseholdRequest): Promise<ApiResponse<JoinHouseholdResponse>> {
-    return apiClient.post<JoinHouseholdResponse>(API_ENDPOINTS.INVITE.JOIN, data);
+    return apiClient.post<JoinHouseholdResponse>(API_ENDPOINTS.AUTH.JOIN, data);
   },
 
   // Password Reset (handled by Supabase, but keeping for completeness)

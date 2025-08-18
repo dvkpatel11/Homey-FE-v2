@@ -76,6 +76,20 @@ export function useLocalStorage<T>(
   return [storedValue, setValue, removeValue, hasValue];
 }
 
+export interface MultiStepData {
+  [stepKey: string]: any;
+  __currentStep?: number;
+  __completedSteps?: number[];
+}
+
+export interface UseMultiStepDataReturn {
+  stepData: MultiStepData;
+  updateStep: (stepKey: string | number, data: any) => void;
+  clearAllSteps: () => void;
+  getStep: (stepKey: string | number) => any;
+  clearStep: (stepKey: string | number) => void;
+}
+
 // SSR-safe localStorage hook with sync
 export function useLocalStorageSync<T>(
   key: string | null,
@@ -102,4 +116,86 @@ export function useLocalStorageSync<T>(
   }, [key, setValue]);
 
   return [value, setValue, removeValue, hasValue];
+}
+
+// Types for multi-step form data
+
+/**
+ * Hook for managing multi-step form data with localStorage persistence
+ * @param storageKey - The key to use for localStorage (null to disable persistence)
+ * @returns Object with stepData and management functions
+ */
+export function useMultiStepData(storageKey: string | null = null): UseMultiStepDataReturn {
+  // Initialize state
+  const [stepData, setStepData] = useState<MultiStepData>(() => {
+    if (!storageKey || typeof window === "undefined") {
+      return {};
+    }
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.warn(`Failed to parse multi-step data from localStorage:`, error);
+      return {};
+    }
+  });
+
+  // Save to localStorage whenever stepData changes
+  useEffect(() => {
+    if (!storageKey || typeof window === "undefined") return;
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(stepData));
+    } catch (error) {
+      console.warn(`Failed to save multi-step data to localStorage:`, error);
+    }
+  }, [stepData, storageKey]);
+
+  // Update a specific step's data
+  const updateStep = useCallback((stepKey: string | number, data: any) => {
+    setStepData((prev) => ({
+      ...prev,
+      [stepKey]: data,
+    }));
+  }, []);
+
+  // Get data for a specific step
+  const getStep = useCallback(
+    (stepKey: string | number) => {
+      return stepData[stepKey];
+    },
+    [stepData]
+  );
+
+  // Clear data for a specific step
+  const clearStep = useCallback((stepKey: string | number) => {
+    setStepData((prev) => {
+      const newData = { ...prev };
+      delete newData[stepKey];
+      return newData;
+    });
+  }, []);
+
+  // Clear all step data
+  const clearAllSteps = useCallback(() => {
+    setStepData({});
+
+    // Also clear from localStorage if using persistence
+    if (storageKey && typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (error) {
+        console.warn(`Failed to clear multi-step data from localStorage:`, error);
+      }
+    }
+  }, [storageKey]);
+
+  return {
+    stepData,
+    updateStep,
+    clearAllSteps,
+    getStep,
+    clearStep,
+  };
 }

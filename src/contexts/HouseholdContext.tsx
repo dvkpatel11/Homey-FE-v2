@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from "@/lib/hooks/useLocalStorage";
+import householdApi from "@/lib/api/households";
 import {
   CreateHouseholdRequest,
   DashboardData,
@@ -14,11 +14,9 @@ import {
   UserRole,
   UUID,
 } from "@/types/api";
-import { API_ENDPOINTS } from "@/types/endpoints";
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
 import { useAuth, useAuthenticatedRequest } from "./AuthContext";
-import { useHouseholdRealtime, useRealtime } from "./RealtimeContext";
 
 interface HouseholdState {
   households: Household[];
@@ -179,114 +177,6 @@ interface HouseholdContextType extends HouseholdState {
 
 const HouseholdContext = createContext<HouseholdContextType | undefined>(undefined);
 
-// API client class for household operations
-class HouseholdApiClient {
-  constructor(private authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>) {}
-
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const baseURL =
-      process.env.NODE_ENV === "development" ? "http://localhost:8000" : process.env.REACT_APP_API_URL || "";
-
-    const response = await this.authenticatedFetch(`${baseURL}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        error: { message: "Network error", code: "NETWORK_ERROR" },
-      }));
-      throw new Error(errorData.error?.message || "Request failed");
-    }
-
-    return response.json();
-  }
-
-  async getHouseholds() {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.LIST);
-  }
-
-  async createHousehold(data: CreateHouseholdRequest) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.CREATE, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getHousehold(id: string) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.GET(id));
-  }
-
-  async updateHousehold(id: string, data: Partial<Household>) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.UPDATE(id), {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteHousehold(id: string) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.DELETE(id), {
-      method: "DELETE",
-    });
-  }
-
-  async getMembers(id: string) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.MEMBERS(id));
-  }
-
-  async removeMember(householdId: string, data: RemoveMemberRequest) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.REMOVE_MEMBER(householdId, data.user_id), {
-      method: "DELETE",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async leaveHousehold(id: string, data: LeaveHouseholdRequest) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.LEAVE(id), {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async generateInviteCode(id: string) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.INVITE_CODE(id), {
-      method: "POST",
-    });
-  }
-
-  async joinHousehold(data: JoinHouseholdRequest) {
-    return this.request(API_ENDPOINTS.INVITE.JOIN, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async validateInviteCode(inviteCode: string) {
-    return this.request(API_ENDPOINTS.INVITE.VALIDATE, {
-      method: "POST",
-      body: JSON.stringify({ invite_code: inviteCode }),
-    });
-  }
-
-  async getSettings(id: string) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.SETTINGS(id));
-  }
-
-  async updateSettings(id: string, settings: Partial<HouseholdSettings>) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.SETTINGS(id), {
-      method: "PUT",
-      body: JSON.stringify(settings),
-    });
-  }
-
-  async getDashboardData(id: string) {
-    return this.request(API_ENDPOINTS.HOUSEHOLDS.DASHBOARD(id));
-  }
-}
-
 interface HouseholdProviderProps {
   children: ReactNode;
 }
@@ -294,8 +184,6 @@ interface HouseholdProviderProps {
 export const HouseholdProvider: React.FC<HouseholdProviderProps> = ({ children }) => {
   const { user, initialized: authInitialized } = useAuth();
   const { authenticatedFetch } = useAuthenticatedRequest();
-  const { connected: realtimeConnected } = useRealtime();
-
   const [state, dispatch] = useReducer(householdReducer, {
     households: [],
     currentHousehold: null,
@@ -309,50 +197,6 @@ export const HouseholdProvider: React.FC<HouseholdProviderProps> = ({ children }
     error: null,
   });
 
-  const householdApi = new HouseholdApiClient(authenticatedFetch);
-
-  // Set up realtime subscriptions for current household
-  const { subscribeToHouseholdChanges, subscribeToMemberChanges } = useHouseholdRealtime();
-
-  // Subscribe to realtime updates
-  useEffect(() => {
-    if (!state.currentHousehold || !realtimeConnected) return;
-
-    const unsubscribeHousehold = subscribeToHouseholdChanges((payload) => {
-      if (payload.eventType === "UPDATE" && payload.new) {
-        dispatch({ type: "UPDATE_HOUSEHOLD", household: payload.new });
-      }
-    });
-
-    const unsubscribeMembers = subscribeToMemberChanges((payload) => {
-      switch (payload.eventType) {
-        case "INSERT":
-          if (payload.new) {
-            dispatch({ type: "ADD_MEMBER", member: payload.new });
-            toast.success(`${payload.new.full_name} joined the household`);
-          }
-          break;
-        case "DELETE":
-          if (payload.old) {
-            dispatch({ type: "REMOVE_MEMBER", memberId: payload.old.id });
-            toast.custom(`${payload.old.full_name} left the household`);
-          }
-          break;
-        case "UPDATE":
-          if (payload.new) {
-            dispatch({ type: "UPDATE_MEMBER", member: payload.new });
-          }
-          break;
-      }
-    });
-
-    return () => {
-      unsubscribeHousehold();
-      unsubscribeMembers();
-    };
-  }, [state.currentHousehold, realtimeConnected, subscribeToHouseholdChanges, subscribeToMemberChanges]);
-
-  // Load households when user changes
   useEffect(() => {
     if (authInitialized && user) {
       loadHouseholds();
@@ -364,16 +208,16 @@ export const HouseholdProvider: React.FC<HouseholdProviderProps> = ({ children }
   // Cache management - persist current household to localStorage
   useEffect(() => {
     if (state.currentHousehold) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_HOUSEHOLD, JSON.stringify(state.currentHousehold));
+      localStorage.setItem("homey_current_household", JSON.stringify(state.currentHousehold));
     } else {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_HOUSEHOLD);
+      localStorage.removeItem("homey_current_household");
     }
   }, [state.currentHousehold]);
 
   // Restore current household from cache on initialization
   useEffect(() => {
     if (authInitialized && user && !state.currentHousehold && state.households.length > 0) {
-      const cachedHousehold = localStorage.getItem(STORAGE_KEYS.CURRENT_HOUSEHOLD);
+      const cachedHousehold = localStorage.getItem("homey_current_household");
       if (cachedHousehold) {
         try {
           const household = JSON.parse(cachedHousehold) as Household;
@@ -569,7 +413,7 @@ export const HouseholdProvider: React.FC<HouseholdProviderProps> = ({ children }
 
   const validateInviteCode = async (inviteCode: string): Promise<boolean> => {
     try {
-      const response = await householdApi.validateInviteCode(inviteCode);
+      const response = await householdApi.validateInviteCode({ invite_code: inviteCode });
 
       if (isApiSuccess(response)) {
         return response.data.valid;

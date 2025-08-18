@@ -14,13 +14,11 @@ import {
   HouseholdBalances,
   RecordPaymentRequest,
   UUID,
-  isApiError,
   isApiSuccess,
 } from "@/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
 import { useLocalStorage } from "./useLocalStorage";
-import { useMobile } from "./useMobile";
 
 export interface ExpenseState {
   bills: Bill[];
@@ -30,7 +28,106 @@ export interface ExpenseState {
   paying: boolean;
   selectedBills: Set<UUID>;
   filters: BillFilterParams;
+  error: string | null;
 }
+
+type ExpenseAction =
+  | { type: "SET_LOADING"; loading: boolean }
+  | { type: "SET_CREATING"; creating: boolean }
+  | { type: "SET_PAYING"; paying: boolean }
+  | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_BILLS"; bills: Bill[] }
+  | { type: "ADD_BILL"; bill: Bill }
+  | { type: "UPDATE_BILL"; bill: Bill }
+  | { type: "REMOVE_BILL"; billId: UUID }
+  | { type: "SET_BALANCES"; balances: HouseholdBalances }
+  | { type: "SET_FILTERS"; filters: BillFilterParams }
+  | { type: "UPDATE_FILTERS"; filters: Partial<BillFilterParams> }
+  | { type: "CLEAR_FILTERS" }
+  | { type: "SELECT_BILL"; billId: UUID }
+  | { type: "DESELECT_BILL"; billId: UUID }
+  | { type: "SELECT_ALL_BILLS"; billIds: UUID[] }
+  | { type: "CLEAR_SELECTION" }
+  | { type: "RESET_STATE" };
+
+const expenseReducer = (state: ExpenseState, action: ExpenseAction): ExpenseState => {
+  switch (action.type) {
+    case "SET_LOADING":
+      return { ...state, loading: action.loading };
+
+    case "SET_CREATING":
+      return { ...state, creating: action.creating };
+
+    case "SET_PAYING":
+      return { ...state, paying: action.paying };
+
+    case "SET_ERROR":
+      return { ...state, error: action.error };
+
+    case "SET_BILLS":
+      return { ...state, bills: action.bills };
+
+    case "ADD_BILL":
+      return { ...state, bills: [action.bill, ...state.bills] };
+
+    case "UPDATE_BILL":
+      return {
+        ...state,
+        bills: state.bills.map((bill) => (bill.id === action.bill.id ? action.bill : bill)),
+      };
+
+    case "REMOVE_BILL":
+      const newSelectedBills = new Set(state.selectedBills);
+      newSelectedBills.delete(action.billId);
+      return {
+        ...state,
+        bills: state.bills.filter((bill) => bill.id !== action.billId),
+        selectedBills: newSelectedBills,
+      };
+
+    case "SET_BALANCES":
+      return { ...state, balances: action.balances };
+
+    case "SET_FILTERS":
+      return { ...state, filters: action.filters };
+
+    case "UPDATE_FILTERS":
+      return { ...state, filters: { ...state.filters, ...action.filters } };
+
+    case "CLEAR_FILTERS":
+      return { ...state, filters: {} };
+
+    case "SELECT_BILL":
+      return {
+        ...state,
+        selectedBills: new Set([...state.selectedBills, action.billId]),
+      };
+
+    case "DESELECT_BILL":
+      const updatedSelection = new Set(state.selectedBills);
+      updatedSelection.delete(action.billId);
+      return { ...state, selectedBills: updatedSelection };
+
+    case "SELECT_ALL_BILLS":
+      return { ...state, selectedBills: new Set(action.billIds) };
+
+    case "CLEAR_SELECTION":
+      return { ...state, selectedBills: new Set() };
+
+    case "RESET_STATE":
+      return {
+        ...state,
+        bills: [],
+        balances: null,
+        selectedBills: new Set(),
+        filters: {},
+        error: null,
+      };
+
+    default:
+      return state;
+  }
+};
 
 export interface ExpenseActions {
   loadBills: (filters?: BillFilterParams) => Promise<void>;
@@ -48,6 +145,7 @@ export interface ExpenseActions {
   clearSelection: () => void;
   bulkMarkPaid: () => Promise<void>;
   bulkDelete: () => Promise<void>;
+  clearError: () => void;
 }
 
 // Bill splitting utility hook
@@ -106,16 +204,16 @@ export const useExpenses = () => {
   const { currentHousehold } = useHousehold();
   const { user } = useAuth();
   const { subscribeToHousehold } = useRealtime();
-  const { lightImpact } = useMobile().hapticFeedback || { lightImpact: () => {} };
 
-  const [state, setState] = useState<ExpenseState>({
+  const [state, dispatch] = useReducer(expenseReducer, {
     bills: [],
     balances: null,
     loading: false,
     creating: false,
     paying: false,
-    selectedBills: new Set(),
+    selectedBills: new Set<string>(),
     filters: {},
+    error: null,
   });
 
   // Persistent filter preferences
@@ -127,20 +225,14 @@ export const useExpenses = () => {
   // Load bills and balances when household changes
   useEffect(() => {
     if (currentHousehold) {
-      setState((prev) => ({ ...prev, filters: savedFilters }));
+      dispatch({ type: "SET_FILTERS", filters: savedFilters });
       refreshData();
 
       // Set up real-time subscription
       const unsubscribe = subscribeToExpenseUpdates();
       return unsubscribe;
     } else {
-      setState((prev) => ({
-        ...prev,
-        bills: [],
-        balances: null,
-        selectedBills: new Set(),
-        filters: {},
-      }));
+      dispatch({ type: "RESET_STATE" });
     }
   }, [currentHousehold, savedFilters]);
 
@@ -153,21 +245,26 @@ export const useExpenses = () => {
     if (!currentHousehold) return;
 
     try {
-      setState((prev) => ({ ...prev, loading: true }));
+      dispatch({ type: "SET_LOADING", loading: true });
+      dispatch({ type: "SET_ERROR", error: null });
 
       const activeFilters = filters || state.filters;
       const response = await billsApi.getBills(currentHousehold.id, activeFilters);
 
       if (isApiSuccess<BillListResponse>(response)) {
-        setState((prev) => ({ ...prev, bills: response.data.data }));
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+        dispatch({ type: "SET_BILLS", bills: response.data.data });
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Failed to load bills";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to load bills";
       console.error("Load bills error:", error);
-      toast.error("Failed to load bills");
+      dispatch({ type: "SET_ERROR", error: errorMessage });
+      toast.error(errorMessage);
     } finally {
-      setState((prev) => ({ ...prev, loading: false }));
+      dispatch({ type: "SET_LOADING", loading: false });
     }
   };
 
@@ -175,93 +272,97 @@ export const useExpenses = () => {
     if (!currentHousehold) return null;
 
     try {
-      setState((prev) => ({ ...prev, creating: true }));
+      dispatch({ type: "SET_CREATING", creating: true });
+      dispatch({ type: "SET_ERROR", error: null });
 
       const response = await billsApi.createBill(currentHousehold.id, data);
 
       if (isApiSuccess<Bill>(response)) {
-        setState((prev) => ({
-          ...prev,
-          bills: [response.data, ...prev.bills],
-        }));
+        dispatch({ type: "ADD_BILL", bill: response.data });
 
         // Refresh balances after creating bill
         await loadBalances();
 
-        lightImpact?.();
         toast.success("Bill created successfully");
         return response.data;
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Failed to create bill";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
 
       return null;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create bill";
       console.error("Create bill error:", error);
-      toast.error("Failed to create bill");
+      dispatch({ type: "SET_ERROR", error: errorMessage });
+      toast.error(errorMessage);
       return null;
     } finally {
-      setState((prev) => ({ ...prev, creating: false }));
+      dispatch({ type: "SET_CREATING", creating: false });
     }
   };
 
   const updateBill = async (billId: UUID, data: Partial<Bill>): Promise<boolean> => {
     try {
+      dispatch({ type: "SET_ERROR", error: null });
+
       const response = await billsApi.updateBill(billId, data);
 
       if (isApiSuccess<Bill>(response)) {
-        setState((prev) => ({
-          ...prev,
-          bills: prev.bills.map((bill) => (bill.id === billId ? response.data : bill)),
-        }));
-
-        lightImpact?.();
+        dispatch({ type: "UPDATE_BILL", bill: response.data });
         toast.success("Bill updated successfully");
         return true;
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Failed to update bill";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
 
       return false;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update bill";
       console.error("Update bill error:", error);
-      toast.error("Failed to update bill");
+      dispatch({ type: "SET_ERROR", error: errorMessage });
+      toast.error(errorMessage);
       return false;
     }
   };
 
   const deleteBill = async (billId: UUID): Promise<boolean> => {
     try {
+      dispatch({ type: "SET_ERROR", error: null });
+
       const response = await billsApi.deleteBill(billId);
 
       if (isApiSuccess(response)) {
-        setState((prev) => ({
-          ...prev,
-          bills: prev.bills.filter((bill) => bill.id !== billId),
-          selectedBills: new Set([...prev.selectedBills].filter((id) => id !== billId)),
-        }));
+        dispatch({ type: "REMOVE_BILL", billId });
 
         // Refresh balances after deleting bill
         await loadBalances();
 
-        lightImpact?.();
         toast.success("Bill deleted successfully");
         return true;
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Failed to delete bill";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
 
       return false;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete bill";
       console.error("Delete bill error:", error);
-      toast.error("Failed to delete bill");
+      dispatch({ type: "SET_ERROR", error: errorMessage });
+      toast.error(errorMessage);
       return false;
     }
   };
 
   const recordPayment = async (data: RecordPaymentRequest): Promise<boolean> => {
     try {
-      setState((prev) => ({ ...prev, paying: true }));
+      dispatch({ type: "SET_PAYING", paying: true });
+      dispatch({ type: "SET_ERROR", error: null });
 
       const response = await billsApi.recordPayment(data);
 
@@ -269,20 +370,23 @@ export const useExpenses = () => {
         // Refresh bills and balances to reflect payment
         await Promise.all([loadBills(), loadBalances()]);
 
-        lightImpact?.();
         toast.success("Payment recorded successfully");
         return true;
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Failed to record payment";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
 
       return false;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to record payment";
       console.error("Record payment error:", error);
-      toast.error("Failed to record payment");
+      dispatch({ type: "SET_ERROR", error: errorMessage });
+      toast.error(errorMessage);
       return false;
     } finally {
-      setState((prev) => ({ ...prev, paying: false }));
+      dispatch({ type: "SET_PAYING", paying: false });
     }
   };
 
@@ -293,7 +397,7 @@ export const useExpenses = () => {
       const response = await billsApi.getBalances(currentHousehold.id);
 
       if (isApiSuccess<HouseholdBalances>(response)) {
-        setState((prev) => ({ ...prev, balances: response.data }));
+        dispatch({ type: "SET_BALANCES", balances: response.data });
       }
     } catch (error) {
       console.error("Load balances error:", error);
@@ -305,40 +409,32 @@ export const useExpenses = () => {
   };
 
   const setFilters = useCallback((filters: Partial<BillFilterParams>) => {
-    setState((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, ...filters },
-    }));
+    dispatch({ type: "UPDATE_FILTERS", filters });
   }, []);
 
   const clearFilters = useCallback(() => {
-    setState((prev) => ({ ...prev, filters: {} }));
+    dispatch({ type: "CLEAR_FILTERS" });
   }, []);
 
   const selectBill = useCallback((billId: UUID) => {
-    setState((prev) => ({
-      ...prev,
-      selectedBills: new Set([...prev.selectedBills, billId]),
-    }));
+    dispatch({ type: "SELECT_BILL", billId });
   }, []);
 
   const deselectBill = useCallback((billId: UUID) => {
-    setState((prev) => {
-      const newSelected = new Set(prev.selectedBills);
-      newSelected.delete(billId);
-      return { ...prev, selectedBills: newSelected };
-    });
+    dispatch({ type: "DESELECT_BILL", billId });
   }, []);
 
   const selectAllBills = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      selectedBills: new Set(prev.bills.map((bill) => bill.id)),
-    }));
-  }, []);
+    const billIds = state.bills.map((bill) => bill.id);
+    dispatch({ type: "SELECT_ALL_BILLS", billIds });
+  }, [state.bills]);
 
   const clearSelection = useCallback(() => {
-    setState((prev) => ({ ...prev, selectedBills: new Set() }));
+    dispatch({ type: "CLEAR_SELECTION" });
+  }, []);
+
+  const clearError = useCallback(() => {
+    dispatch({ type: "SET_ERROR", error: null });
   }, []);
 
   const bulkMarkPaid = async () => {
@@ -351,14 +447,17 @@ export const useExpenses = () => {
       if (isApiSuccess(response)) {
         await refreshData();
         clearSelection();
-        lightImpact?.();
         toast.success(`${response.data.marked_count} bills marked as paid`);
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Failed to mark bills as paid";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to mark bills as paid";
       console.error("Bulk mark paid error:", error);
-      toast.error("Failed to mark bills as paid");
+      dispatch({ type: "SET_ERROR", error: errorMessage });
+      toast.error(errorMessage);
     }
   };
 
@@ -372,33 +471,40 @@ export const useExpenses = () => {
       if (isApiSuccess(response)) {
         await refreshData();
         clearSelection();
-        lightImpact?.();
         toast.success(`${response.data.deleted_count} bills deleted`);
-      } else if (isApiError(response)) {
-        toast.error(response.error.message);
+      } else {
+        const errorMessage = (response as any)?.error?.message || "Failed to delete bills";
+        dispatch({ type: "SET_ERROR", error: errorMessage });
+        toast.error(errorMessage);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete bills";
       console.error("Bulk delete error:", error);
-      toast.error("Failed to delete bills");
+      dispatch({ type: "SET_ERROR", error: errorMessage });
+      toast.error(errorMessage);
     }
   };
 
   const subscribeToExpenseUpdates = useCallback((): (() => void) => {
     if (!currentHousehold) return () => {};
 
-    const unsubscribeBills = subscribeToHousehold("*", "bills", (payload) => {
+    const unsubscribe = subscribeToHousehold(currentHousehold.id, "bills", "*", (payload) => {
       const { eventType, new: newRecord, old: oldRecord } = payload;
-      // Handle bill updates...
+
+      if (eventType === "INSERT" && newRecord) {
+        dispatch({ type: "ADD_BILL", bill: newRecord as Bill });
+        toast.success("New bill added");
+      } else if (eventType === "UPDATE" && newRecord) {
+        dispatch({ type: "UPDATE_BILL", bill: newRecord as Bill });
+      } else if (eventType === "DELETE" && oldRecord) {
+        dispatch({ type: "REMOVE_BILL", billId: oldRecord.id });
+      }
+
+      // Refresh balances on any bill change
+      loadBalances();
     });
 
-    const unsubscribeSplits = subscribeToHousehold("*", "bill_splits", () => {
-      loadBalances(); // Refresh balances on payment changes
-    });
-
-    return () => {
-      unsubscribeBills();
-      unsubscribeSplits();
-    };
+    return unsubscribe;
   }, [currentHousehold?.id, subscribeToHousehold]);
 
   const actions: ExpenseActions = {
@@ -417,6 +523,7 @@ export const useExpenses = () => {
     clearSelection,
     bulkMarkPaid,
     bulkDelete,
+    clearError,
   };
 
   // Computed values

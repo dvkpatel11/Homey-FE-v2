@@ -13,5 +13,4 @@ export { useLocalStorage, useLocalStorageSync } from "./useLocalStorage";
 // Core feature hooks
 export { useChat } from "./useChat";
 export { useBillSplitting, useExpenses } from "./useExpenses";
-export { useHouseholdRealtime, useRealtime, useUserRealtime } from "./useRealtime";
 export { useTaskCompletion, useTasks } from "./useTasks";

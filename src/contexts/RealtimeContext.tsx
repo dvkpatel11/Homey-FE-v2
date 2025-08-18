@@ -126,10 +126,11 @@
 //   }
 //   return context;
 // };
+
+import { Household } from "@/types";
 import { REALTIME_CHANNELS } from "@/types/endpoints";
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
-import { useHousehold } from "./HouseholdContext";
 
 type SubscriptionCallback = (payload: any) => void;
 
@@ -159,7 +160,12 @@ interface RealtimeStatus {
 interface RealtimeContextType extends RealtimeStatus {
   // Core subscription management
   subscribe: (config: RealtimeSubscription) => () => void;
-  subscribeToHousehold: (table: string, event?: string, callback?: SubscriptionCallback) => () => void;
+  subscribeToHousehold: (
+    householdId: string,
+    table: string,
+    event?: string,
+    callback?: SubscriptionCallback
+  ) => () => void;
   subscribeToUser: (table: string, event?: string, callback?: SubscriptionCallback) => () => void;
 
   // Advanced subscription management
@@ -207,13 +213,12 @@ const useOnlineStatus = () => {
 
 export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const { currentHousehold } = useHousehold();
   const isOnline = useOnlineStatus();
 
   const subscriptionsRef = useRef<Map<string, any>>(new Map());
   const pollIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const heartbeatTimer = useRef<NodeJS.Timeout>();
-  const reconnectTimer = useRef<NodeJS.Timeout>();
+  const heartbeatTimer = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
 
   const [status, setStatus] = React.useState<RealtimeStatus>({
@@ -382,19 +387,32 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   );
 
   const subscribeToHousehold = useCallback(
-    (table: string, event: string = "*", callback?: SubscriptionCallback): (() => void) => {
-      if (!currentHousehold || !callback) return () => {};
+    (householdId: string, table: string, event: string = "*", callback: SubscriptionCallback) => {
+      // Choose channel based on table type
+      let channel: string;
+      switch (table) {
+        case "messages":
+          channel = REALTIME_CHANNELS.CHAT(householdId);
+          break;
+        case "tasks":
+          channel = REALTIME_CHANNELS.TASKS(householdId);
+          break;
+        case "bills":
+          channel = REALTIME_CHANNELS.BILLS(householdId);
+          break;
+        default:
+          channel = `household:${householdId}:${table}`;
+      }
 
-      const channel = REALTIME_CHANNELS.CHAT(currentHousehold.id);
       return subscribe({
         channel,
         table,
         event: event as any,
-        filter: `household_id=eq.${currentHousehold.id}`,
+        filter: `household_id=eq.${householdId}`,
         callback,
       });
     },
-    [currentHousehold, subscribe]
+    [subscribe]
   );
 
   const subscribeToUser = useCallback(
@@ -519,7 +537,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const stopHeartbeat = useCallback(() => {
     if (heartbeatTimer.current) {
       clearInterval(heartbeatTimer.current);
-      heartbeatTimer.current = undefined;
+      heartbeatTimer.current = null;
     }
   }, []);
 
@@ -568,6 +586,7 @@ export const useRealtime = (): RealtimeContextType => {
 
 // Custom hook for subscribing to specific data changes
 export const useRealtimeSubscription = (
+  householdId: string,
   table: string,
   callback: SubscriptionCallback,
   scope: "household" | "user" = "household",
@@ -577,15 +596,16 @@ export const useRealtimeSubscription = (
 
   useEffect(() => {
     const unsubscribe =
-      scope === "household" ? subscribeToHousehold(table, event, callback) : subscribeToUser(table, event, callback);
+      scope === "household"
+        ? subscribeToHousehold(householdId, table, event, callback)
+        : subscribeToUser(table, event, callback);
 
     return unsubscribe;
   }, [table, callback, scope, event, subscribeToHousehold, subscribeToUser]);
 };
 
 // Specialized hooks for common subscriptions
-export const useHouseholdRealtime = () => {
-  const { currentHousehold } = useHousehold();
+export const useHouseholdRealtime = (currentHousehold: Household | null) => {
   const { subscribe } = useRealtime();
 
   const subscribeToHouseholdChanges = useCallback(

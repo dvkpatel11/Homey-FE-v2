@@ -331,6 +331,23 @@ export interface TaskBase {
   category?: TaskCategory;
 }
 
+// ❌ MISSING: No household membership validation types
+// Need to add:
+export interface HouseholdMembership extends TimestampMixin {
+  id: UUID;
+  user_id: UUID;
+  household_id: UUID;
+  role: UserRole;
+  joined_at: ISODateTime;
+  left_at?: ISODateTime;
+}
+
+export interface HouseholdValidationContext {
+  household_id: UUID;
+  member_ids: Set<UUID>;
+  user_roles: Map<UUID, UserRole>;
+}
+
 export interface CreateTaskRequest extends TaskBase {
   assigned_to?: UUID[];
 }

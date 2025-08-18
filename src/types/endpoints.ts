@@ -6,49 +6,45 @@
 export const API_ENDPOINTS = {
   // Authentication
   AUTH: {
-    LOGIN: '/api/auth/login',
-    REFRESH: '/api/auth/refresh',
-    LOGOUT: '/api/auth/logout',
+    LOGIN: "/api/auth/login",
+    REFRESH: "/api/auth/refresh",
+    LOGOUT: "/api/auth/logout",
+    VALIDATE: "/api/auth/validate",
+    JOIN: "/api/auth/join",
   },
 
   // Profile
   PROFILE: {
-    GET: '/api/profile',
-    UPDATE: '/api/profile',
-    AVATAR: '/api/profile/avatar',
-  },
-
-  // Invitations
-  INVITE: {
-    VALIDATE: '/api/invite/validate',
-    JOIN: '/api/invite/join',
+    GET: "/api/profile",
+    UPDATE: "/api/profile",
+    AVATAR: "/api/profile/avatar",
   },
 
   // Households
   HOUSEHOLDS: {
-    LIST: '/api/households',
-    CREATE: '/api/households',
+    LIST: "/api/households",
+    CREATE: "/api/households",
     GET: (id: string) => `/api/households/${id}`,
     UPDATE: (id: string) => `/api/households/${id}`,
     DELETE: (id: string) => `/api/households/${id}`,
     DASHBOARD: (id: string) => `/api/households/${id}/dashboard`,
     SETTINGS: (id: string) => `/api/households/${id}/settings`,
-    
+
     // Members
     MEMBERS: (id: string) => `/api/households/${id}/members`,
     INVITE_CODE: (id: string) => `/api/households/${id}/invite`,
     REMOVE_MEMBER: (id: string, userId: string) => `/api/households/${id}/members/${userId}`,
     LEAVE: (id: string) => `/api/households/${id}/leave`,
-    
+
     // Tasks
     TASKS: (id: string) => `/api/households/${id}/tasks`,
     TASK_SWAPS: (id: string) => `/api/households/${id}/task-swaps`,
-    
+
     // Bills
     BILLS: (id: string) => `/api/households/${id}/bills`,
     BALANCES: (id: string) => `/api/households/${id}/balances`,
     USER_BALANCE: (id: string, userId: string) => `/api/households/${id}/balances/${userId}`,
-    
+
     // Messages
     MESSAGES: (id: string) => `/api/households/${id}/messages`,
   },
@@ -101,23 +97,23 @@ export const API_ENDPOINTS = {
 
   // Notifications
   NOTIFICATIONS: {
-    LIST: '/api/notifications',
+    LIST: "/api/notifications",
     READ: (id: string) => `/api/notifications/${id}/read`,
-    READ_ALL: '/api/notifications/read-all',
+    READ_ALL: "/api/notifications/read-all",
     DELETE: (id: string) => `/api/notifications/${id}`,
-    DEVICE: '/api/notifications/device',
+    DEVICE: "/api/notifications/device",
     REMOVE_DEVICE: (token: string) => `/api/notifications/device/${token}`,
   },
 } as const;
 
 // Rate limits for different endpoint categories
 export const RATE_LIMITS = {
-  CHAT_MESSAGES: '30 per minute',
-  POLL_VOTING: '10 per minute',
-  CHAT_HISTORY: '100 per minute',
-  TASK_CREATION: '20 per hour',
-  BILL_CREATION: '50 per hour',
-  DEFAULT: '1000 per hour',
+  CHAT_MESSAGES: "30 per minute",
+  POLL_VOTING: "10 per minute",
+  CHAT_HISTORY: "100 per minute",
+  TASK_CREATION: "20 per hour",
+  BILL_CREATION: "50 per hour",
+  DEFAULT: "1000 per hour",
 } as const;
 
 // Real-time channel patterns

@@ -10,6 +10,7 @@ import {
   Message,
   MessageListResponse,
   MessageQueryParams,
+  MessageType,
   Poll,
   PollVoteResponse,
   UUID,
@@ -43,7 +44,7 @@ export const chatApi = {
   async sendQuickMessage(householdId: UUID, content: string): Promise<ApiResponse<Message>> {
     return this.sendMessage(householdId, {
       content,
-      message_type: "text",
+      message_type: MessageType.TEXT,
     });
   },
 
@@ -76,7 +77,7 @@ export const chatApi = {
   async createPoll(
     householdId: UUID,
     question: string,
-    options: string[],
+    options: [string, string, ...string[]],
     settings?: {
       multiple_choice?: boolean;
       expires_at?: string;
@@ -85,7 +86,7 @@ export const chatApi = {
   ): Promise<ApiResponse<Message>> {
     return this.sendMessage(householdId, {
       content: question,
-      message_type: "poll",
+      message_type: MessageType.POLL,
       poll: {
         question,
         options,
@@ -156,7 +157,7 @@ export const chatApi = {
   async replyToMessage(householdId: UUID, messageId: UUID, content: string): Promise<ApiResponse<Message>> {
     return this.sendMessage(householdId, {
       content,
-      message_type: "text",
+      message_type: MessageType.TEXT,
       replied_to: messageId,
     });
   },

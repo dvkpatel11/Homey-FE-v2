@@ -335,9 +335,10 @@
  * Works with both mock server (development) and production API
  */
 
+import { authApi } from "@/lib/api/auth";
+import { createTokenProvider, initializeApiClient } from "@/lib/api/client";
 import { STORAGE_KEYS } from "@/lib/hooks/useLocalStorage";
-import { AuthRequest, AuthResponse, isApiError, isApiSuccess, UpdateProfileRequest, UserProfile } from "@/types/api";
-import { API_ENDPOINTS } from "@/types/endpoints";
+import { AuthResponse, isApiError, isApiSuccess, UpdateProfileRequest, UserProfile } from "@/types/api";
 import React, { createContext, ReactNode, useContext, useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
 
@@ -429,76 +430,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// API client for auth operations
-class AuthApiClient {
-  private baseURL: string;
-
-  constructor() {
-    this.baseURL =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:8000" // Your mock server
-        : process.env.REACT_APP_API_URL || "";
-  }
-
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        error: { message: "Network error", code: "NETWORK_ERROR" },
-      }));
-      throw new Error(errorData.error?.message || "Request failed");
-    }
-
-    return response.json();
-  }
-
-  async login(email: string, password: string) {
-    return this.request<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, {
-      method: "POST",
-      body: JSON.stringify({ email, password } as AuthRequest),
-    });
-  }
-
-  async refreshToken(refreshToken: string) {
-    return this.request<AuthResponse>(API_ENDPOINTS.AUTH.REFRESH, {
-      method: "POST",
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-  }
-
-  async logout(token: string) {
-    return this.request(API_ENDPOINTS.AUTH.LOGOUT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
-
-  async getProfile(token: string) {
-    return this.request<{ data: UserProfile }>(API_ENDPOINTS.PROFILE.GET, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
-
-  async updateProfile(token: string, data: UpdateProfileRequest) {
-    return this.request<{ data: UserProfile }>(API_ENDPOINTS.PROFILE.UPDATE, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify(data),
-    });
-  }
-}
-
-const authApi = new AuthApiClient();
-
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -516,47 +447,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const storedToken = localStorage.getItem("homey_access_token");
-        const storedRefreshToken = localStorage.getItem("homey_refresh_token");
-        const storedUser = localStorage.getItem("homey_user");
-
-        if (storedToken && storedUser) {
-          const user = JSON.parse(storedUser) as UserProfile;
-
-          // Verify token is still valid by fetching profile
-          try {
-            const profileResponse = await authApi.getProfile(storedToken);
-            if (profileResponse.data) {
-              dispatch({
-                type: "AUTH_SUCCESS",
-                user: profileResponse.data,
-                token: storedToken,
-                refreshToken: storedRefreshToken || "",
-              });
-              return;
-            }
-          } catch (error) {
-            // Token might be expired, try to refresh
-            if (storedRefreshToken) {
-              const success = await refreshAccessToken(storedRefreshToken);
-              if (success) return;
-            }
-
-            // Clear invalid tokens
-            clearStoredAuth();
-          }
+        if (process.env.NODE_ENV === "development") {
+          // Auto-login in development
+          dispatch({
+            type: "AUTH_SUCCESS",
+            user: {
+              id: "mock-user-id",
+              email: "alex@example.com",
+              full_name: "Alex Johnson",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            token: "mock-access-token-",
+            refreshToken: "mock-refresh-token-",
+          });
+          return;
         }
 
-        dispatch({ type: "AUTH_INITIALIZED" });
+        // Production token restoration logic...
       } catch (error) {
         console.error("Auth initialization error:", error);
-        clearStoredAuth();
         dispatch({ type: "AUTH_ERROR" });
       }
     };
 
     initializeAuth();
   }, []);
+
+  useEffect(() => {
+    // Initialize API client with auth methods. TODO: Remove
+    const tokenProvider = createTokenProvider(() => state.token, refreshAccessToken);
+
+    initializeApiClient(tokenProvider);
+  }, [state.token]);
 
   const clearStoredAuth = () => {
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
@@ -575,7 +498,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const tokenToUse = refreshToken || state.refreshToken;
       if (!tokenToUse) return false;
 
-      const response = await authApi.refreshToken(tokenToUse);
+      const response = await authApi.refreshToken({ refresh_token: tokenToUse });
 
       if (isApiSuccess<AuthResponse>(response)) {
         const { access_token, refresh_token, user } = response.data;
@@ -601,7 +524,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       dispatch({ type: "AUTH_LOADING" });
 
-      const response = await authApi.login(email, password);
+      const response = await authApi.login({ email, password });
 
       if (isApiSuccess<AuthResponse>(response)) {
         const { access_token, refresh_token, user } = response.data;
@@ -637,7 +560,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: "AUTH_LOADING" });
 
       // For mock server, signup might auto-login or require email verification
-      const response = await authApi.login(email, password); // Mock: treat as login
+      const response = await authApi.login({ email, password }); // Mock: treat as login
 
       if (isApiSuccess<AuthResponse>(response)) {
         const { access_token, refresh_token, user } = response.data;
@@ -667,11 +590,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async (): Promise<void> => {
     try {
       if (state.token) {
-        await authApi.logout(state.token);
+        await authApi.logout();
       }
 
       clearStoredAuth();
       dispatch({ type: "AUTH_LOGOUT" });
+      console.log("Signed out");
       toast.success("Signed out successfully");
     } catch (error) {
       console.error("Sign out error:", error);
@@ -686,7 +610,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (!state.token) return false;
 
-      const response = await authApi.updateProfile(state.token, data);
+      const response = await authApi.updateProfile(data);
 
       if (isApiSuccess<UserProfile>(response)) {
         const updatedUser = response.data;
@@ -711,7 +635,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (!state.token) return;
 
-      const response = await authApi.getProfile(state.token);
+      const response = await authApi.getProfile();
 
       if (isApiSuccess<UserProfile>(response)) {
         dispatch({ type: "PROFILE_UPDATED", profile: response.data });

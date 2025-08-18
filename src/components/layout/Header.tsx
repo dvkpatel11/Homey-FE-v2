@@ -1,57 +1,54 @@
-// ==========================================
-// Header.tsx - Production Ready
-// ==========================================
+// src/components/layout/Header.tsx - Updated with context integration
+import { useAuth } from "@/contexts/AuthContext";
+import { useHousehold } from "@/contexts/HouseholdContext";
+import { useNotifications } from "@/contexts/NotificationContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, ChevronDown, Home, LogOut, Menu, Moon, Plus, Search, Settings, Sun, Users } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as UI from "../ui";
 
 interface HeaderProps {
-  isDark: boolean;
-  toggleTheme: () => void;
-  user?: {
-    name: string;
-    avatar?: string;
-    email?: string;
-  };
-  household?: {
-    id: string;
-    name: string;
-    memberCount: number;
-  };
-  households?: Array<{
-    id: string;
-    name: string;
-    memberCount: number;
-  }>;
-  notifications?: {
-    count: number;
-    hasUnread: boolean;
-  };
-  onSwitchHousehold?: (householdId: string) => void;
-  onLogout?: () => void;
   onToggleSidebar?: () => void;
   showSidebarToggle?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  isDark,
-  toggleTheme,
-  user,
-  household,
-  households = [],
-  notifications = { count: 0, hasUnread: false },
-  onSwitchHousehold,
-  onLogout,
-  onToggleSidebar,
-  showSidebarToggle = false,
-}) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, showSidebarToggle = false }) => {
+  const navigate = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
+  const { currentHousehold, households, selectHousehold, generateInviteCode } = useHousehold();
+  const { unreadCount, notifications } = useNotifications();
+
   const [showHouseholdMenu, setShowHouseholdMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const handleHouseholdSwitch = (householdId: string) => {
-    onSwitchHousehold?.(householdId);
+  const handleHouseholdSwitch = async (householdId: string) => {
+    await selectHousehold(householdId);
+    setShowHouseholdMenu(false);
+  };
+
+  const handleCreateHousehold = () => {
+    navigate("/household/create");
+    setShowHouseholdMenu(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    setShowUserMenu(false);
+  };
+
+  const handleInvite = async () => {
+    if (currentHousehold) {
+      const invite = await generateInviteCode(currentHousehold.id);
+      if (invite) {
+        // Copy invite link to clipboard
+        navigator.clipboard.writeText(invite.invite_link);
+        // toast.success("Invite link copied to clipboard!");
+      }
+    }
     setShowHouseholdMenu(false);
   };
 
@@ -78,6 +75,8 @@ export const Header: React.FC<HeaderProps> = ({
                        rounded-glass-lg flex items-center justify-center shadow-glass-violet flex-shrink-0"
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/dashboard")}
+            role="button"
           >
             <Home className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </motion.div>
@@ -88,13 +87,13 @@ export const Header: React.FC<HeaderProps> = ({
               Homey
             </UI.GlassHeading>
 
-            {household && (
+            {currentHousehold && (
               <button
                 onClick={() => setShowHouseholdMenu(!showHouseholdMenu)}
                 className="flex items-center space-x-1 text-glass-secondary hover:text-glass 
                            transition-colors group"
               >
-                <span className="text-sm truncate max-w-32 sm:max-w-48">{household.name}</span>
+                <span className="text-sm truncate max-w-32 sm:max-w-48">{currentHousehold.name}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${showHouseholdMenu ? "rotate-180" : ""}`} />
               </button>
             )}
@@ -104,7 +103,13 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Side - Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
           {/* Search */}
-          <UI.IconButton icon={Search} variant="ghost" size="md" className="hidden sm:flex" />
+          <UI.IconButton
+            icon={Search}
+            variant="ghost"
+            size="md"
+            className="hidden sm:flex"
+            onClick={() => navigate("/search")}
+          />
 
           {/* Notifications */}
           <motion.div className="relative">
@@ -114,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
               size="md"
               onClick={() => setShowNotifications(!showNotifications)}
             />
-            {notifications.hasUnread && (
+            {unreadCount > 0 && (
               <motion.div
                 className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full 
                            flex items-center justify-center"
@@ -122,9 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
               >
-                <span className="text-xs text-white font-medium">
-                  {notifications.count > 9 ? "9+" : notifications.count}
-                </span>
+                <span className="text-xs text-white font-medium">{unreadCount > 9 ? "9+" : unreadCount}</span>
               </motion.div>
             )}
           </motion.div>
@@ -139,7 +142,13 @@ export const Header: React.FC<HeaderProps> = ({
           />
 
           {/* Settings */}
-          <UI.IconButton icon={Settings} variant="ghost" size="md" className="hidden sm:flex" />
+          <UI.IconButton
+            icon={Settings}
+            variant="ghost"
+            size="md"
+            className="hidden sm:flex"
+            onClick={() => navigate("/settings")}
+          />
 
           {/* User Menu */}
           {user ? (
@@ -154,12 +163,20 @@ export const Header: React.FC<HeaderProps> = ({
                 className="w-8 h-8 bg-gradient-to-br from-primary to-primary-bright 
                               rounded-full flex items-center justify-center text-white text-sm font-medium"
               >
-                {user.avatar || user.name.charAt(0)}
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.full_name} className="w-full h-full rounded-full" />
+                ) : (
+                  user.full_name.charAt(0).toUpperCase()
+                )}
               </div>
-              <span className="hidden sm:block text-glass text-sm truncate max-w-20">{user.name.split(" ")[0]}</span>
+              <span className="hidden sm:block text-glass text-sm truncate max-w-20">
+                {user.full_name.split(" ")[0]}
+              </span>
             </motion.button>
           ) : (
-            <UI.IconButton icon={LogOut} variant="danger" size="md" onClick={onLogout} />
+            <UI.GlassButton variant="primary" size="sm" onClick={() => navigate("/login")}>
+              Sign In
+            </UI.GlassButton>
           )}
         </div>
       </motion.header>
@@ -177,7 +194,12 @@ export const Header: React.FC<HeaderProps> = ({
             <UI.GlassCard variant="strong" className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <UI.GlassText className="font-medium">Switch Household</UI.GlassText>
-                <UI.IconButton icon={Plus} variant="ghost" size="sm" />
+                <div className="flex space-x-2">
+                  <UI.IconButton icon={Plus} variant="ghost" size="sm" onClick={handleCreateHousehold} />
+                  {currentHousehold?.role === "admin" && (
+                    <UI.IconButton icon={Users} variant="ghost" size="sm" onClick={handleInvite} />
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -186,7 +208,7 @@ export const Header: React.FC<HeaderProps> = ({
                     key={h.id}
                     onClick={() => handleHouseholdSwitch(h.id)}
                     className={`w-full p-3 rounded-glass text-left transition-all duration-200 ${
-                      household?.id === h.id
+                      currentHousehold?.id === h.id
                         ? "glass-button text-white"
                         : "glass-input hover:glass-button hover:text-white"
                     }`}
@@ -196,12 +218,58 @@ export const Header: React.FC<HeaderProps> = ({
                       <div className="min-w-0 flex-1">
                         <div className="font-medium truncate">{h.name}</div>
                         <div className="text-xs opacity-75">
-                          {h.memberCount} member{h.memberCount !== 1 ? "s" : ""}
+                          {h.member_count} member{h.member_count !== 1 ? "s" : ""} • {h.role}
                         </div>
                       </div>
                     </div>
                   </button>
                 ))}
+              </div>
+            </UI.GlassCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Notifications Dropdown */}
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div
+            className="absolute top-20 sm:top-24 right-4 sm:right-6 w-80 z-50"
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+          >
+            <UI.GlassCard variant="strong" className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <UI.GlassText className="font-medium">Notifications</UI.GlassText>
+                <UI.GlassButton variant="ghost" size="sm" onClick={() => navigate("/notifications")}>
+                  View All
+                </UI.GlassButton>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {notifications.slice(0, 5).map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-3 rounded-glass transition-all duration-200 ${
+                      notification.read_at ? "glass-input opacity-75" : "glass-input border-blue-400/30"
+                    }`}
+                  >
+                    <div className="font-medium text-sm">{notification.title}</div>
+                    <div className="text-xs text-glass-secondary mt-1">{notification.message}</div>
+                    <div className="text-xs text-glass-muted mt-1">
+                      {new Date(notification.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+
+                {notifications.length === 0 && (
+                  <div className="text-center py-4">
+                    <Bell className="w-8 h-8 text-glass-muted mx-auto mb-2" />
+                    <UI.GlassText variant="secondary">No notifications</UI.GlassText>
+                  </div>
+                )}
               </div>
             </UI.GlassCard>
           </motion.div>
@@ -224,10 +292,14 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-10 h-10 bg-gradient-to-br from-primary to-primary-bright 
                                 rounded-full flex items-center justify-center text-white font-medium"
                 >
-                  {user.avatar || user.name.charAt(0)}
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt={user.full_name} className="w-full h-full rounded-full" />
+                  ) : (
+                    user.full_name.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <UI.GlassText className="font-medium truncate">{user.name}</UI.GlassText>
+                  <UI.GlassText className="font-medium truncate">{user.full_name}</UI.GlassText>
                   {user.email && (
                     <UI.GlassText variant="muted" className="text-xs truncate">
                       {user.email}
@@ -237,15 +309,21 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               <div className="space-y-1">
-                <button className="w-full p-3 rounded-glass text-left glass-input hover:glass-button hover:text-white transition-all duration-200">
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full p-3 rounded-glass text-left glass-input hover:glass-button hover:text-white transition-all duration-200"
+                >
                   <div className="flex items-center space-x-3">
                     <Settings className="w-4 h-4" />
-                    <span className="text-sm">Settings</span>
+                    <span className="text-sm">Profile & Settings</span>
                   </div>
                 </button>
 
                 <button
-                  onClick={onLogout}
+                  onClick={handleLogout}
                   className="w-full p-3 rounded-glass text-left glass-input hover:bg-red-500/20 
                              hover:border-red-500/30 hover:text-red-400 transition-all duration-200"
                 >
